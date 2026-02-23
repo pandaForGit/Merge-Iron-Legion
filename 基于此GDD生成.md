@@ -1,3 +1,12 @@
+---
+# 🚨 必读文档 - 每次开发前必须阅读
+## ⚠️ IMPORTANT: READ BEFORE EVERY DEVELOPMENT SESSION
+---
+
+> **🔴 开发必读**：每次开始开发前，请务必阅读此完整游戏设计文档(GDD)。
+> 本文档定义了游戏的核心玩法、美术规范和技术实现方案。
+> 任何代码变更必须符合此文档规范。
+
 ```markdown
 # 《陆地军事塔防》（Land Military TD）完整游戏设计文档 (GDD) & 开发规范 Prompt
 
