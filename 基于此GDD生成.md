@@ -53,6 +53,16 @@
 - **资源清单**：10 Tiles + 12建筑(4x3) + 18单位(3x3x2帧) + 4敌 + 8UI = ~72 SVG。
 
 ## 🛠️ 技术&开发规范（Godot单场景，MVP 1周）
+
+### ⚙️ 配置系统规范
+> **🔧 配置管理**：所有游戏固定值（建筑造价、单位属性、波次难度、遗物效果等）必须在 `game/config/game_config.json` 中配置。
+>
+> **📝 配置原则**：
+> - 禁止在代码中硬编码数值
+> - 平衡调整只需修改 JSON，无需改代码
+> - 配置项分类：grid/economy/buildings/units/enemies/combat/battlefield/waves/relics/commanders
+> - 数值验证：启动时加载并校验配置完整性
+
 - **节点结构**：
   ```
   Main (Node2D, CanvasLayer UI)
@@ -82,7 +92,8 @@
 - **导出**：HTML5 (Zstd PCK, no threads/physics)。抖音：自审“无敏感，无赌”。
 
 ## 🚀 AI开发指令
-- **生成代码**：基于此GDD，输出完整Godot项目.zip（Main.tscn + 5 GDScript: GameManager/Unit/Merge/Grid等）。
+- **生成代码**：基于此GDD，输出完整Godot项目.zip（Main.tscn + 11 GDScript: ConfigManager/GameManager/GridManager/Unit/Building/Battlefield/HUD/ShopPanel/RelicPopup/CommanderPanel等）。
+- **配置系统**：所有固定值必须从 `game/config/game_config.json` 读取，禁止硬编码。使用 Cfg Autoload 单例访问配置。
 - **生成美术**：用72 Prompt批量SVG（Aseprite导入SpriteFrames）。
 - **平衡**：Excel: Lv伤害x2，波敌数=wave*5，遗物+20-50%。
 - **测试**：20波通关<3min，合并特效爆炸粒子（Godot GPUParticles2D）。

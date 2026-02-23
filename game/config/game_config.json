@@ -20,9 +20,9 @@
 
 	"buildings": {
 		"gold_mine":  { "cost": 50,  "production_interval": 3.0, "name": "金矿", "color": [0.72, 0.58, 0.15] },
-		"barracks":   { "cost": 100, "production_interval": 50, "name": "兵营", "color": [0.25, 0.50, 0.25] },
+		"barracks":   { "cost": 100, "production_interval": 10, "name": "兵营", "color": [0.25, 0.50, 0.25] },
 		"cannon":     { "cost": 150, "production_interval": 0.0, "name": "炮台", "color": [0.45, 0.45, 0.50] },
-		"tavern":     { "cost": 200, "production_interval": 80, "name": "酒馆", "color": [0.55, 0.28, 0.50] }
+		"tavern":     { "cost": 200, "production_interval": 15, "name": "酒馆", "color": [0.55, 0.28, 0.50] }
 	},
 
 	"units": {
