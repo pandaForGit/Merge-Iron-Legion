@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 
 	if global_position.x < Cfg.battlefield_left():
 		is_active = false
-		GameManager.enemy_breached.emit()
+		GameManager.on_enemy_breach()
 		queue_free()
 		return
 

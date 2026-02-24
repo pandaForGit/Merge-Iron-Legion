@@ -1,10 +1,13 @@
 {
 	"grid": {
-		"cols": 8,
-		"rows": 8,
+		"initial_cols": 2,
+		"max_cols": 24,
+		"rows": 2,
 		"cell_size": 64,
 		"viewport_width": 720,
-		"offset_y": 100
+		"offset_y": 100,
+		"expansion_cost_base": 500,
+		"expansion_cost_multiplier": 1.5
 	},
 
 	"economy": {
@@ -12,8 +15,10 @@
 		"gold_mine_output": 10,
 		"adjacent_buff": 0.2,
 		"merge_discount_ratio": 0.5,
-		"wave_clear_base_bonus": 30,
-		"wave_clear_bonus_per_wave": 10,
+		"tower_destroy_base_bonus": 100,
+		"tower_destroy_bonus_per_level": 50,
+		"map_expansion_base_bonus": 200,
+		"map_expansion_bonus_per_level": 100,
 		"enemy_kill_base_reward": 5,
 		"enemy_kill_reward_per_type": 5
 	},
@@ -46,6 +51,30 @@
 		]
 	},
 
+	"enemy_towers": {
+		"tower_count_per_expansion": 3,
+		"spawn_positions": [
+			{ "x": 660, "y": 180 },
+			{ "x": 680, "y": 350 },
+			{ "x": 660, "y": 520 },
+			{ "x": 820, "y": 220 },
+			{ "x": 850, "y": 400 },
+			{ "x": 820, "y": 540 },
+			{ "x": 1000, "y": 250 },
+			{ "x": 1030, "y": 420 },
+			{ "x": 1000, "y": 550 },
+			{ "x": 1200, "y": 280 },
+			{ "x": 1220, "y": 440 },
+			{ "x": 1200, "y": 560 }
+		],
+		"types": [
+			{ "name": "防御炮台", "hp": 300, "damage": 20, "attack_range": 150.0, "cooldown": 1.2, "spawn_interval": 12.0, "spawn_type": 0, "color": [0.80, 0.30, 0.30], "icon": "🏰" },
+			{ "name": "坦克碉堡", "hp": 500, "damage": 35, "attack_range": 120.0, "cooldown": 1.8, "spawn_interval": 18.0, "spawn_type": 1, "color": [0.70, 0.25, 0.35], "icon": "🛡️" },
+			{ "name": "无人机巢穴", "hp": 200, "damage": 15, "attack_range": 180.0, "cooldown": 0.9, "spawn_interval": 8.0,  "spawn_type": 2, "color": [0.75, 0.35, 0.40], "icon": "🚁" },
+			{ "name": "巨兽要塞", "hp": 800, "damage": 50, "attack_range": 100.0, "cooldown": 2.5, "spawn_interval": 25.0, "spawn_type": 3, "color": [0.65, 0.20, 0.25], "icon": "🏯" }
+		]
+	},
+
 	"combat": {
 		"counter_bonus": 1.5,
 		"counter_penalty": 0.7,
@@ -54,26 +83,23 @@
 
 	"battlefield": {
 		"left_boundary": 50.0,
-		"right_boundary": 720.0,
+		"right_boundary": 1400.0,
 		"spawn_y_min": 130.0,
 		"spawn_y_max": 580.0,
 		"spawn_x_offset": 30.0,
-		"unit_exit_offset": 50.0,
+		"unit_exit_offset": 100.0,
 		"max_breaches": 5,
 		"merge_distance": 40.0
 	},
 
-	"waves": {
-		"base_enemy_count": 3,
-		"enemies_per_wave": 2,
-		"spawn_delay": 0.8,
-		"difficulty_scaling_per_wave": 0.15,
-		"spawn_rules": [
-			{ "enemy_type": 3, "min_wave": 10, "chance": 0.05, "label": "Boss" },
-			{ "enemy_type": 1, "min_wave": 5,  "chance": 0.25, "label": "坦克" },
-			{ "enemy_type": 2, "min_wave": 1,  "chance": 0.40, "label": "无人机" },
-			{ "enemy_type": 0, "min_wave": 1,  "chance": 1.00, "label": "步兵" }
-		]
+	"map_expansion": {
+		"initial_regions": 1,
+		"max_regions": 4,
+		"region_width": 200,
+		"towers_per_region": 3,
+		"victory_towers_destroyed": 8,
+		"expansion_unlock_gold": 1000,
+		"expansion_unlock_multiplier": 2.0
 	},
 
 	"relics": {

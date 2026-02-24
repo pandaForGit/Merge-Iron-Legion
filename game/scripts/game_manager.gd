@@ -1,16 +1,17 @@
 extends Node
 
 signal gold_changed(new_amount: int)
-signal wave_changed(new_wave: int)
 signal game_state_changed(new_state: GameState)
 signal building_selected(type: BuildingType)
 signal unit_spawn_requested(world_pos: Vector2, unit_type: UnitType, level: int)
+signal tower_destroyed(tower_id: int)
+signal region_unlocked(region: int)
+signal all_towers_cleared
 signal enemy_breached
-signal wave_cleared
 signal relic_chosen(relic_type: RelicType)
 signal commander_changed(cmd: Commander)
 
-enum GameState { SETUP, WAVE_PREP, WAVE_ACTIVE, RELIC_SELECT, GAME_OVER }
+enum GameState { SETUP, PLAYING, RELIC_SELECT, VICTORY, GAME_OVER }
 enum BuildingType { GOLD_MINE, BARRACKS, CANNON, TAVERN }
 enum UnitType { INFANTRY, TANK, ARTILLERY }
 enum RelicType {
@@ -19,24 +20,21 @@ enum RelicType {
 }
 enum Commander { BALANCED, PRODUCER, FIREPOWER }
 
-# ====== 以下所有数据均从 Cfg (config_manager) 加载 ======
+# ====== 从 Cfg 加载的常量 ======
 
-# --- Grid ---
-var GRID_COLS: int = 6
+var GRID_COLS: int = 8
+var GRID_MAX_COLS: int = 24
 var GRID_ROWS: int = 8
 var CELL_SIZE: int = 64
 
-# --- Buildings ---
 var BUILDING_COSTS: Dictionary = {}
 var BUILDING_NAMES: Dictionary = {}
 var BUILDING_COLORS: Dictionary = {}
 var PRODUCTION_INTERVALS: Dictionary = {}
 
-# --- Economy ---
 var GOLD_MINE_OUTPUT: int = 10
 var ADJACENT_BUFF: float = 0.2
 
-# --- Units ---
 var UNIT_NAMES: Dictionary = {}
 var UNIT_BASE_STATS: Dictionary = {}
 var UNIT_ATTACK_RANGES: Dictionary = {}
@@ -45,42 +43,39 @@ var UNIT_COLORS: Dictionary = {}
 var UNIT_LABELS: Dictionary = {}
 var MAX_UNIT_LEVEL: int = 3
 
-# --- Enemies ---
 var ENEMY_TYPES: Dictionary = {}
+var ENEMY_TOWER_TYPES: Array = []
 
-# --- Combat ---
 var COUNTER_BONUS: float = 1.5
 var COUNTER_PENALTY: float = 0.7
 
-# --- Battlefield ---
 var MERGE_DISTANCE: float = 40.0
 var BATTLEFIELD_LEFT: float = 50.0
-var BATTLEFIELD_RIGHT: float = 720.0
+var BATTLEFIELD_RIGHT: float = 1400.0
 
-# --- Relics ---
 var RELIC_DATA: Dictionary = {}
-
-# --- Commanders ---
 var COMMANDER_DATA: Dictionary = {}
 
 # ====== 运行时状态 ======
 
 var active_relics: Array = []
+var elapsed_time: float = 0.0
+var breach_count: int = 0
+var max_breaches: int = 5
 
 var current_commander: Commander = Commander.BALANCED:
 	set(value):
 		current_commander = value
 		commander_changed.emit(value)
 
-var gold: int = 200:
+var gold: int = 2000:
 	set(value):
 		gold = max(0, value)
 		gold_changed.emit(gold)
 
-var wave: int = 0:
-	set(value):
-		wave = value
-		wave_changed.emit(wave)
+var towers_destroyed: int = 0
+var total_towers: int = 0
+var current_region: int = 1
 
 var state: GameState = GameState.SETUP:
 	set(value):
@@ -97,24 +92,26 @@ func _ready() -> void:
 	_load_from_config()
 
 
+func _process(delta: float) -> void:
+	if state == GameState.PLAYING:
+		elapsed_time += delta
+
+
 func _load_from_config() -> void:
-	# Grid
-	GRID_COLS = Cfg.grid_cols()
+	GRID_COLS = Cfg.grid_initial_cols()
+	GRID_MAX_COLS = Cfg.grid_max_cols()
 	GRID_ROWS = Cfg.grid_rows()
 	CELL_SIZE = Cfg.grid_cell_size()
 
-	# Buildings
 	for btype in [BuildingType.GOLD_MINE, BuildingType.BARRACKS, BuildingType.CANNON, BuildingType.TAVERN]:
 		BUILDING_COSTS[btype] = Cfg.building_cost(btype)
 		BUILDING_NAMES[btype] = Cfg.building_name(btype)
 		BUILDING_COLORS[btype] = Cfg.building_color(btype)
 		PRODUCTION_INTERVALS[btype] = Cfg.building_production_interval(btype)
 
-	# Economy
 	GOLD_MINE_OUTPUT = Cfg.gold_mine_output()
 	ADJACENT_BUFF = Cfg.adjacent_buff()
 
-	# Units
 	for utype in [UnitType.INFANTRY, UnitType.TANK, UnitType.ARTILLERY]:
 		var d: Dictionary = Cfg.unit_data(utype)
 		UNIT_BASE_STATS[utype] = {"hp": d.get("hp", 50), "damage": d.get("damage", 15), "speed": d.get("speed", 40)}
@@ -126,7 +123,6 @@ func _load_from_config() -> void:
 
 	MAX_UNIT_LEVEL = Cfg.unit_max_level()
 
-	# Enemies
 	for i in Cfg.enemy_type_count():
 		var ed: Dictionary = Cfg.enemy_data(i)
 		ENEMY_TYPES[i] = {
@@ -139,19 +135,18 @@ func _load_from_config() -> void:
 			"cooldown": ed.get("cooldown", 1.0),
 		}
 
-	# Combat
+	ENEMY_TOWER_TYPES = Cfg.enemy_tower_types()
+
 	COUNTER_BONUS = Cfg.counter_bonus()
 	COUNTER_PENALTY = Cfg.counter_penalty()
 
-	# Battlefield
 	MERGE_DISTANCE = Cfg.merge_distance()
 	BATTLEFIELD_LEFT = Cfg.battlefield_left()
 	BATTLEFIELD_RIGHT = Cfg.battlefield_right()
 
-	# Starting gold
+	max_breaches = Cfg.max_breaches()
 	gold = Cfg.starting_gold()
 
-	# Relics
 	for rtype in RelicType.values():
 		var rd: Dictionary = Cfg.relic_data(rtype)
 		RELIC_DATA[rtype] = {
@@ -162,7 +157,6 @@ func _load_from_config() -> void:
 			"color": Cfg.arr_to_color(rd.get("color", [0.5, 0.5, 0.5])),
 		}
 
-	# Commanders
 	for cmd in [Commander.BALANCED, Commander.PRODUCER, Commander.FIREPOWER]:
 		var cd: Dictionary = Cfg.commander_data(cmd)
 		COMMANDER_DATA[cmd] = {
@@ -173,7 +167,7 @@ func _load_from_config() -> void:
 		}
 
 
-# ====== 遗物效果倍率（从配置读取 value） ======
+# ====== 遗物效果倍率 ======
 
 func get_gold_multiplier() -> float:
 	var m := 1.0
@@ -230,6 +224,9 @@ func pick_random_relics(count: int = 0) -> Array:
 func can_afford(building_type: BuildingType) -> bool:
 	return gold >= BUILDING_COSTS.get(building_type, 9999)
 
+func can_afford_amount(amount: int) -> bool:
+	return gold >= amount
+
 func purchase_building(building_type: BuildingType) -> bool:
 	if can_afford(building_type):
 		gold -= BUILDING_COSTS[building_type]
@@ -238,3 +235,43 @@ func purchase_building(building_type: BuildingType) -> bool:
 
 func get_level_multiplier(level: int) -> float:
 	return pow(Cfg.level_multiplier_base(), level - 1)
+
+
+# ====== 防御塔相关 ======
+
+func on_tower_destroyed_callback(tower_type: int) -> void:
+	towers_destroyed += 1
+	var bonus: int = Cfg.tower_destroy_base_bonus() + tower_type * Cfg.tower_destroy_bonus_per_level()
+	gold += bonus
+	tower_destroyed.emit(towers_destroyed)
+
+	var victory_count: int = Cfg.map_victory_towers_destroyed()
+	if towers_destroyed >= victory_count:
+		state = GameState.VICTORY
+		all_towers_cleared.emit()
+
+func get_towers_progress() -> String:
+	return "%d / %d" % [towers_destroyed, Cfg.map_victory_towers_destroyed()]
+
+
+# ====== 突破/失败 ======
+
+func on_enemy_breach() -> void:
+	breach_count += 1
+	enemy_breached.emit()
+	if breach_count >= max_breaches:
+		state = GameState.GAME_OVER
+
+func add_extra_life() -> void:
+	max_breaches += 1
+
+func get_breach_remaining() -> int:
+	return max_breaches - breach_count
+
+
+# ====== 时间格式化 ======
+
+func get_elapsed_time_string() -> String:
+	var mins: int = int(elapsed_time) / 60
+	var secs: int = int(elapsed_time) % 60
+	return "%d:%02d" % [mins, secs]

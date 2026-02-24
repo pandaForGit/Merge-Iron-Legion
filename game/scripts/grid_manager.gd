@@ -1,6 +1,7 @@
 extends Node2D
 
-var COLS: int = 6
+var COLS: int = 8
+var MAX_COLS: int = 24
 var ROWS: int = 8
 var CELL_SIZE: int = 64
 
@@ -10,6 +11,7 @@ var grid_data: Array = []
 var building_nodes: Dictionary = {}
 
 var hover_cell := Vector2i(-1, -1)
+var _expansion_count: int = 0
 
 # --- 建筑拖拽合并状态 ---
 var _is_dragging: bool = false
@@ -18,7 +20,6 @@ var _drag_type: int = -1
 var _drag_level: int = 0
 var _drag_mouse_pos: Vector2 = Vector2.ZERO
 
-# 调色板
 const COLOR_GRASS := Color(0.22, 0.38, 0.22, 0.85)
 const COLOR_GRASS_ALT := Color(0.20, 0.35, 0.20, 0.85)
 const COLOR_HOVER_OK := Color(0.35, 0.55, 0.35, 0.95)
@@ -31,7 +32,8 @@ const COLOR_DRAG_SOURCE := Color(0.15, 0.25, 0.15, 0.4)
 
 
 func _ready() -> void:
-	COLS = Cfg.grid_cols()
+	COLS = Cfg.grid_initial_cols()
+	MAX_COLS = Cfg.grid_max_cols()
 	ROWS = Cfg.grid_rows()
 	CELL_SIZE = Cfg.grid_cell_size()
 	grid_offset = Vector2((Cfg.grid_viewport_width() - COLS * CELL_SIZE) / 2.0, Cfg.grid_offset_y())
@@ -76,6 +78,48 @@ func is_cell_empty(grid_pos: Vector2i) -> bool:
 	if not is_valid_cell(grid_pos):
 		return false
 	return grid_data[grid_pos.y][grid_pos.x] == -1
+
+
+# --- 地图扩展 ---
+
+func get_expansion_cost() -> int:
+	var base_cost: int = Cfg.grid_expansion_cost_base()
+	var mult: float = Cfg.grid_expansion_cost_multiplier()
+	return int(base_cost * pow(mult, _expansion_count))
+
+
+func can_expand() -> bool:
+	return COLS < MAX_COLS
+
+
+func expand_grid(extra_cols: int = 2) -> bool:
+	if not can_expand():
+		return false
+
+	var cost: int = get_expansion_cost()
+	if not GameManager.can_afford_amount(cost):
+		return false
+
+	GameManager.gold -= cost
+	var new_cols: int = mini(COLS + extra_cols, MAX_COLS)
+	var added: int = new_cols - COLS
+
+	for row in ROWS:
+		for _c in added:
+			grid_data[row].append(-1)
+
+	COLS = new_cols
+	grid_offset = Vector2((Cfg.grid_viewport_width() - COLS * CELL_SIZE) / 2.0, Cfg.grid_offset_y())
+	if grid_offset.x < 10:
+		grid_offset.x = 10
+
+	_expansion_count += 1
+	queue_redraw()
+	return true
+
+
+func get_grid_right_edge() -> float:
+	return grid_offset.x + COLS * CELL_SIZE
 
 
 # --- 建筑放置 ---
@@ -170,6 +214,13 @@ func _recalc_adjacent_buffs(grid_pos: Vector2i) -> void:
 			building_nodes[pos].adjacent_count = get_adjacent_count(pos)
 
 
+# --- 坐标转换（屏幕→世界，适配Camera2D）---
+
+func _screen_to_world(screen_pos: Vector2) -> Vector2:
+	var canvas_transform := get_viewport().get_canvas_transform()
+	return canvas_transform.affine_inverse() * screen_pos
+
+
 # --- 输入处理 ---
 
 func _input(event: InputEvent) -> void:
@@ -177,8 +228,9 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		_drag_mouse_pos = event.position
-		var new_hover := world_to_grid(event.position)
+		var world_pos := _screen_to_world(event.position)
+		_drag_mouse_pos = world_pos
+		var new_hover := world_to_grid(world_pos)
 		if new_hover != hover_cell:
 			hover_cell = new_hover
 		queue_redraw()
@@ -193,19 +245,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion:
-		var new_hover := world_to_grid(event.position)
+		var world_pos := _screen_to_world(event.position)
+		var new_hover := world_to_grid(world_pos)
 		if new_hover != hover_cell:
 			hover_cell = new_hover
 			queue_redraw()
 
 	elif event is InputEventMouseButton:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var cell := world_to_grid(event.position)
+			var world_pos := _screen_to_world(event.position)
+			var cell := world_to_grid(world_pos)
 			if is_valid_cell(cell):
 				if is_cell_empty(cell):
 					try_place_building(cell)
 				else:
-					_start_building_drag(cell, event.position)
+					_start_building_drag(cell, world_pos)
 				get_viewport().set_input_as_handled()
 
 
@@ -306,7 +360,6 @@ func _draw_buildings() -> void:
 			)
 			draw_rect(border_rect, COLOR_OCCUPIED_BORDER, false, 2.0)
 
-		# 生产倒计时进度条（格子顶部）
 		if bnode.has_method("get_production_progress"):
 			var progress: float = bnode.get_production_progress()
 			if progress > 0.0:

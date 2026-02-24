@@ -38,8 +38,8 @@ func _process(delta: float) -> void:
 	if not is_active:
 		return
 
-	if not _current_target or not is_instance_valid(_current_target):
-		_current_target = _find_nearest_enemy()
+	if not _current_target or not is_instance_valid(_current_target) or not _current_target.is_active:
+		_current_target = _find_nearest_target()
 
 	if _current_target:
 		var dist: float = global_position.distance_to(_current_target.global_position)
@@ -59,10 +59,22 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func _find_nearest_enemy() -> Node2D:
-	var enemies: Array = get_tree().get_nodes_in_group("enemies")
+func _find_nearest_target() -> Node2D:
 	var best: Node2D = null
 	var best_dist: float = 9999.0
+
+	# Search enemy towers first (primary targets)
+	var towers: Array = get_tree().get_nodes_in_group("enemy_towers")
+	for t in towers:
+		if not t.is_active:
+			continue
+		var d: float = global_position.distance_to(t.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = t
+
+	# Also search mobile enemies if any exist
+	var enemies: Array = get_tree().get_nodes_in_group("enemies")
 	for e in enemies:
 		if not e.is_active:
 			continue
@@ -70,6 +82,7 @@ func _find_nearest_enemy() -> Node2D:
 		if d < best_dist:
 			best_dist = d
 			best = e
+
 	return best
 
 

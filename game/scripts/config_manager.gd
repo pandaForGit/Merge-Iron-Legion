@@ -1,13 +1,9 @@
 extends Node
 
-# 全局配置管理器，从 JSON 加载所有游戏平衡数值
-# 修改 config/game_config.json 即可调整游戏难度，无需改代码
-
 const CONFIG_PATH := "res://config/game_config.json"
 
 var _data: Dictionary = {}
 
-# 预构建的类型映射（string key → enum index）
 var _building_keys: Array = ["gold_mine", "barracks", "cannon", "tavern"]
 var _unit_keys: Array = ["infantry", "tank", "artillery"]
 var _commander_keys: Array = ["balanced", "producer", "firepower"]
@@ -40,8 +36,6 @@ func reload() -> void:
 	_load_config()
 
 
-# --- 通用访问器（点分路径） ---
-
 func get_value(path: String, default_value = null):
 	var keys: PackedStringArray = path.split(".")
 	var current = _data
@@ -53,8 +47,6 @@ func get_value(path: String, default_value = null):
 	return current
 
 
-# --- 颜色工具 ---
-
 func arr_to_color(arr: Array) -> Color:
 	if arr.size() >= 3:
 		return Color(arr[0], arr[1], arr[2])
@@ -63,8 +55,11 @@ func arr_to_color(arr: Array) -> Color:
 
 # --- Grid ---
 
-func grid_cols() -> int:
-	return get_value("grid.cols", 6)
+func grid_initial_cols() -> int:
+	return get_value("grid.initial_cols", 8)
+
+func grid_max_cols() -> int:
+	return get_value("grid.max_cols", 24)
 
 func grid_rows() -> int:
 	return get_value("grid.rows", 8)
@@ -78,11 +73,17 @@ func grid_viewport_width() -> int:
 func grid_offset_y() -> float:
 	return get_value("grid.offset_y", 100.0)
 
+func grid_expansion_cost_base() -> int:
+	return get_value("grid.expansion_cost_base", 500)
+
+func grid_expansion_cost_multiplier() -> float:
+	return get_value("grid.expansion_cost_multiplier", 1.5)
+
 
 # --- Economy ---
 
 func starting_gold() -> int:
-	return get_value("economy.starting_gold", 200)
+	return get_value("economy.starting_gold", 2000)
 
 func gold_mine_output() -> int:
 	return get_value("economy.gold_mine_output", 10)
@@ -93,11 +94,17 @@ func adjacent_buff() -> float:
 func merge_discount_ratio() -> float:
 	return get_value("economy.merge_discount_ratio", 0.5)
 
-func wave_clear_base_bonus() -> int:
-	return get_value("economy.wave_clear_base_bonus", 30)
+func tower_destroy_base_bonus() -> int:
+	return get_value("economy.tower_destroy_base_bonus", 100)
 
-func wave_clear_bonus_per_wave() -> int:
-	return get_value("economy.wave_clear_bonus_per_wave", 10)
+func tower_destroy_bonus_per_level() -> int:
+	return get_value("economy.tower_destroy_bonus_per_level", 50)
+
+func map_expansion_base_bonus() -> int:
+	return get_value("economy.map_expansion_base_bonus", 200)
+
+func map_expansion_bonus_per_level() -> int:
+	return get_value("economy.map_expansion_bonus_per_level", 100)
 
 func enemy_kill_base_reward() -> int:
 	return get_value("economy.enemy_kill_base_reward", 5)
@@ -106,7 +113,7 @@ func enemy_kill_reward_per_type() -> int:
 	return get_value("economy.enemy_kill_reward_per_type", 5)
 
 
-# --- Buildings（按枚举索引查询） ---
+# --- Buildings ---
 
 func building_data(enum_idx: int) -> Dictionary:
 	if enum_idx < 0 or enum_idx >= _building_keys.size():
@@ -128,7 +135,7 @@ func building_production_interval(enum_idx: int) -> float:
 	return building_data(enum_idx).get("production_interval", 5.0)
 
 
-# --- Units（按枚举索引查询） ---
+# --- Units ---
 
 func unit_data(enum_idx: int) -> Dictionary:
 	if enum_idx < 0 or enum_idx >= _unit_keys.size():
@@ -149,7 +156,7 @@ func unit_scale_per_level() -> float:
 	return get_value("units.scale_per_level", 0.25)
 
 
-# --- Enemies（按类型索引查询） ---
+# --- Enemies (mobile units, kept for potential tower spawns) ---
 
 func enemy_data(type_idx: int) -> Dictionary:
 	var types: Array = get_value("enemies.types", [])
@@ -159,6 +166,45 @@ func enemy_data(type_idx: int) -> Dictionary:
 
 func enemy_type_count() -> int:
 	return get_value("enemies.types", []).size()
+
+
+# --- Enemy Towers ---
+
+func enemy_tower_types() -> Array:
+	return get_value("enemy_towers.types", [])
+
+func enemy_tower_type_count() -> int:
+	return enemy_tower_types().size()
+
+func enemy_tower_data(type_idx: int) -> Dictionary:
+	var types: Array = enemy_tower_types()
+	if type_idx < 0 or type_idx >= types.size():
+		return {}
+	return types[type_idx]
+
+func enemy_tower_spawn_positions() -> Array:
+	return get_value("enemy_towers.spawn_positions", [])
+
+func enemy_tower_count_per_expansion() -> int:
+	return get_value("enemy_towers.tower_count_per_expansion", 3)
+
+
+# --- Map Expansion ---
+
+func map_initial_regions() -> int:
+	return get_value("map_expansion.initial_regions", 1)
+
+func map_max_regions() -> int:
+	return get_value("map_expansion.max_regions", 4)
+
+func map_region_width() -> int:
+	return get_value("map_expansion.region_width", 200)
+
+func map_towers_per_region() -> int:
+	return get_value("map_expansion.towers_per_region", 3)
+
+func map_victory_towers_destroyed() -> int:
+	return get_value("map_expansion.victory_towers_destroyed", 8)
 
 
 # --- Combat ---
@@ -200,25 +246,7 @@ func merge_distance() -> float:
 	return get_value("battlefield.merge_distance", 40.0)
 
 
-# --- Waves ---
-
-func wave_base_enemy_count() -> int:
-	return get_value("waves.base_enemy_count", 3)
-
-func wave_enemies_per_wave() -> int:
-	return get_value("waves.enemies_per_wave", 2)
-
-func wave_spawn_delay() -> float:
-	return get_value("waves.spawn_delay", 0.8)
-
-func wave_difficulty_scaling() -> float:
-	return get_value("waves.difficulty_scaling_per_wave", 0.15)
-
-func wave_spawn_rules() -> Array:
-	return get_value("waves.spawn_rules", [])
-
-
-# --- Relics（按枚举索引查询） ---
+# --- Relics ---
 
 func relic_data(enum_idx: int) -> Dictionary:
 	if enum_idx < 0 or enum_idx >= _relic_keys.size():
@@ -233,7 +261,7 @@ func relic_choices_per_wave() -> int:
 	return get_value("relics.choices_per_wave", 3)
 
 
-# --- Commanders（按枚举索引查询） ---
+# --- Commanders ---
 
 func commander_data(enum_idx: int) -> Dictionary:
 	if enum_idx < 0 or enum_idx >= _commander_keys.size():

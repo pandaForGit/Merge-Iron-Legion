@@ -2,64 +2,79 @@ extends Node2D
 
 const UnitScene: PackedScene = preload("res://scenes/unit.tscn")
 const EnemyScene: PackedScene = preload("res://scenes/enemy.tscn")
+const EnemyTowerScene: PackedScene = preload("res://scenes/enemy_tower.tscn")
 
-var current_wave: int = 0
-var enemies_alive: int = 0
-var wave_active: bool = false
-var _breach_count: int = 0
-var _max_breaches: int = 5
+var _towers: Array = []
+var _tower_id_counter: int = 0
+var _region_towers_alive: Dictionary = {}
 
 
 func _ready() -> void:
-	_max_breaches = Cfg.max_breaches()
 	GameManager.unit_spawn_requested.connect(_on_unit_spawn_requested)
-	GameManager.enemy_breached.connect(_on_enemy_breached)
+	_spawn_region_towers(1)
 
 
-func start_wave() -> void:
-	current_wave += 1
-	GameManager.wave = current_wave
-	GameManager.state = GameManager.GameState.WAVE_ACTIVE
-	wave_active = true
-	_spawn_wave_enemies()
+func _spawn_region_towers(region: int) -> void:
+	var towers_per_region: int = Cfg.map_towers_per_region()
+	var spawn_positions: Array = Cfg.enemy_tower_spawn_positions()
+	var tower_type_count: int = Cfg.enemy_tower_type_count()
 
+	var start_idx: int = (region - 1) * towers_per_region
+	var difficulty_mult: float = 1.0 + (region - 1) * 0.5
 
-func _spawn_wave_enemies() -> void:
-	var base_count: int = Cfg.wave_base_enemy_count() + current_wave * Cfg.wave_enemies_per_wave()
-	var spawn_delay: float = Cfg.wave_spawn_delay()
+	_region_towers_alive[region] = 0
 
-	for i in base_count:
-		var timer := get_tree().create_timer(spawn_delay * i)
-		timer.timeout.connect(_spawn_single_enemy.bind(current_wave))
-
-
-func _spawn_single_enemy(wave_num: int) -> void:
-	var rules: Array = Cfg.wave_spawn_rules()
-	var roll: float = randf()
-	var etype: int = 0
-
-	for rule in rules:
-		if wave_num >= rule["min_wave"] and roll < rule["chance"]:
-			etype = rule["enemy_type"]
+	for i in towers_per_region:
+		var pos_idx: int = start_idx + i
+		if pos_idx >= spawn_positions.size():
 			break
 
-	var spawn_y: float = randf_range(Cfg.spawn_y_min(), Cfg.spawn_y_max())
-	var spawn_pos := Vector2(Cfg.battlefield_right() + Cfg.spawn_x_offset(), spawn_y)
+		var pos_data: Dictionary = spawn_positions[pos_idx]
+		var spawn_pos := Vector2(pos_data.get("x", 600), pos_data.get("y", 300))
 
-	var wave_mult: float = 1.0 + (wave_num - 1) * Cfg.wave_difficulty_scaling()
+		var tower_type: int = i % tower_type_count
 
+		_tower_id_counter += 1
+		var tower: Area2D = EnemyTowerScene.instantiate()
+		tower.init_tower(tower_type, _tower_id_counter, spawn_pos, region, difficulty_mult)
+		tower.destroyed.connect(_on_tower_destroyed)
+		tower.spawn_enemy_requested.connect(_on_tower_spawn_enemy)
+		add_child(tower)
+		_towers.append(tower)
+		_region_towers_alive[region] += 1
+
+	GameManager.total_towers += towers_per_region
+
+
+func _on_tower_destroyed(tower: Area2D) -> void:
+	_towers.erase(tower)
+	var region: int = tower.region
+	if _region_towers_alive.has(region):
+		_region_towers_alive[region] -= 1
+
+	if _region_towers_alive.get(region, 0) <= 0:
+		_on_region_cleared(region)
+
+
+func _on_region_cleared(region: int) -> void:
+	var max_regions: int = Cfg.map_max_regions()
+	var next_region: int = region + 1
+
+	if next_region <= max_regions:
+		var bonus: int = Cfg.map_expansion_base_bonus() + region * Cfg.map_expansion_bonus_per_level()
+		GameManager.gold += bonus
+		GameManager.current_region = next_region
+		GameManager.region_unlocked.emit(next_region)
+		_spawn_region_towers(next_region)
+
+
+func _on_tower_spawn_enemy(pos: Vector2, enemy_type: int, difficulty: float) -> void:
+	if GameManager.state != GameManager.GameState.PLAYING:
+		return
+	var enemy_type_clamped: int = clampi(enemy_type, 0, Cfg.enemy_type_count() - 1)
 	var enemy: Area2D = EnemyScene.instantiate()
-	enemy.init_enemy(etype, spawn_pos, wave_mult)
+	enemy.init_enemy(enemy_type_clamped, pos, difficulty)
 	add_child(enemy)
-	enemies_alive += 1
-	enemy.tree_exited.connect(_on_enemy_removed)
-
-
-func _on_enemy_removed() -> void:
-	enemies_alive -= 1
-	if wave_active and enemies_alive <= 0:
-		wave_active = false
-		GameManager.wave_cleared.emit()
 
 
 func _on_unit_spawn_requested(world_pos: Vector2, unit_type: int, level: int) -> void:
@@ -72,19 +87,9 @@ func spawn_unit(type: int, level: int, pos: Vector2) -> void:
 	add_child(unit)
 
 
-func _on_enemy_breached() -> void:
-	_breach_count += 1
-	if _breach_count >= _max_breaches:
-		GameManager.state = GameManager.GameState.GAME_OVER
+func get_towers_alive() -> int:
+	return _towers.size()
 
 
-func add_extra_life() -> void:
-	_max_breaches += 1
-
-
-func get_breach_count() -> int:
-	return _breach_count
-
-
-func get_max_breaches() -> int:
-	return _max_breaches
+func get_region_towers_alive(region: int) -> int:
+	return _region_towers_alive.get(region, 0)

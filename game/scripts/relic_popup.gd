@@ -66,7 +66,7 @@ func _build_ui() -> void:
 
 	# 副标题
 	var subtitle := Label.new()
-	subtitle.text = "第 " + str(GameManager.wave) + " 波已清除！选择战利品强化你的军队"
+	subtitle.text = "区域 " + str(GameManager.current_region) + " 已突破！选择战利品强化你的军队"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.position = Vector2(40, 350)
 	subtitle.size = Vector2(640, 25)

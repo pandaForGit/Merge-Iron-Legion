@@ -1,6 +1,6 @@
 # 《陆地军事塔防》AI生成美术资源Prompt列表
 
-专为**陆地军事塔防**游戏设计的完整美术资源生成指南。采用**16-bit像素艺术风格**，AI生成SVG矢量图，确保总资源<1MB。
+专为**陆地军事塔防**游戏设计的完整美术资源生成指南，新增**敌方防御塔、地形系统、多兵种单位**。采用**16-bit像素艺术风格**，AI生成SVG矢量图，确保总资源<1MB。
 
 ## 🎨 统一风格要求
 
@@ -21,8 +21,9 @@ Clean vector pixel art [尺寸] [类型]Lv[级] Frame[1/2] ([Idle/Action]): [详
 4. **Forest Edge Tile**: Clean vector pixel art 32x32 forest tree line, camouflage green, military ambush, viewBox='0 0 32 32', SVG.
 5. **Rocky Terrain Tile**: Clean vector pixel art 32x32 jagged rocks and boulders, defensive positions, gray/brown, viewBox='0 0 32 32', SVG.
 6. **Urban Ruins Tile**: Clean vector pixel art 32x32 destroyed city buildings, war-torn concrete, viewBox='0 0 32 32', SVG.
-7. **River Crossing Tile**: Clean vector pixel art 32x32 shallow river with bridge, military logistics, blue water, viewBox='0 0 32 32', SVG.
-8. **Barbed Wire Tile**: Clean vector pixel art 32x32 defensive barbed wire obstacles, military fortifications, viewBox='0 0 32 32', SVG.
+7. **River Crossing Tile**: Clean vector pixel art 32x32 shallow river with military bridge, water obstacles for ground units, blue water with waves, viewBox='0 0 32 32', SVG.
+8. **Water Terrain Tile**: Clean vector pixel art 32x32 deep water area, naval passage for marine units, dark blue with whitecaps, viewBox='0 0 32 32', SVG.
+9. **Barbed Wire Tile**: Clean vector pixel art 32x32 defensive barbed wire obstacles, military fortifications, viewBox='0 0 32 32', SVG.
 9. **Trenches Tile**: Clean vector pixel art 32x32 dug military trenches, defensive lines, earth tones, viewBox='0 0 32 32', SVG.
 10. **Command Post Tile**: Clean vector pixel art 32x32 military base camp, tents and vehicles, strategic point, viewBox='0 0 32 32', SVG.
 
@@ -60,7 +61,7 @@ Clean vector pixel art [尺寸] [类型]Lv[级] Frame[1/2] ([Idle/Action]): [详
 33. **Tavern Lv3 Frame 1 (Idle)**: Clean vector pixel art 64x64 tavern Lv3 Frame 1 idle (scale 1.6x, mystic glow): legendary war heroes hall fortress, grand archways, mystical recruitment runes glowing, viewBox='0 0 64 64', SVG.
 34. **Tavern Lv3 Frame 2 (Random Summon)**: Clean vector pixel art 64x64 tavern Lv3 Frame 2 summon: fortress gates phasing open 20°, massive recruitment rift 20px spinning with legendary particles, epic hero unit descending with beam light, ground cracking effects, viewBox='0 0 64 64', SVG.
 
-## ⚔️ 3. 单位 (3种 × 3级 = 9种，16x32 SVG，2帧：走/攻)
+## ⚔️ 3. 单位 (5种 × 3级 = 15种，16x32陆军/24x16海军空军 SVG，2帧：走/攻)
 
 ### 步兵 (Infantry) - 近战肉盾
 35. **Infantry Lv1 Frame 1 (Walk)**: Clean vector pixel art 16x32 infantry Lv1 Frame 1 walk: basic soldier with AK-47, marching step forward, dust trail 3px, side military view, army green uniform, viewBox='0 0 16 32', SVG.
@@ -86,23 +87,49 @@ Clean vector pixel art [尺寸] [类型]Lv[级] Frame[1/2] ([Idle/Action]): [详
 51. **Artillery Lv3 Frame 1 (Position)**: Clean vector pixel art 16x32 artillery Lv3 Frame 1 position (scale 1.6x): railway siege gun, massive reinforced barrel, fortress-like base, apocalyptic firepower, viewBox='0 0 16 32', SVG.
 52. **Artillery Lv3 Frame 2 (Bombard)**: Clean vector pixel art 16x32 artillery Lv3 Frame 2 bombard: orbital bombardment simulation, shell with mushroom cloud trail 20px, massive crater 12px, shockwave rings expanding, viewBox='0 0 16 32', SVG.
 
-## 👹 4. 敌人 (4种，24x24 SVG，静态)
+### 海兵 (Marines) - 水路突击，水域专家
+53. **Marine Lv1 Frame 1 (Move)**: Clean vector pixel art 24x16 marine Lv1 Frame 1 move: speedboat with soldiers, water wake trail 4px, naval assault craft, blue/gray military colors, viewBox='0 0 24 16', SVG.
+54. **Marine Lv1 Frame 2 (Attack)**: Clean vector pixel art 24x16 marine Lv1 Frame 2 attack: boat-mounted gun firing, muzzle flash 6px, bullet tracers over water, amphibious assault, viewBox='0 0 24 16', SVG.
+55. **Marine Lv2 Frame 1 (Move)**: Clean vector pixel art 24x16 marine Lv2 Frame 1 move (scale 1.3x): patrol boat with heavy armament, radar spinning, enhanced naval presence, viewBox='0 0 24 16', SVG.
+56. **Marine Lv2 Frame 2 (Attack)**: Clean vector pixel art 24x16 marine Lv2 Frame 2 attack: naval cannon barrage, shell splashes in water, explosive impacts, coastal bombardment, viewBox='0 0 24 16', SVG.
+57. **Marine Lv3 Frame 1 (Move)**: Clean vector pixel art 24x16 marine Lv3 Frame 1 move (scale 1.6x): destroyer-class warship, massive wake, missile launchers ready, naval supremacy, viewBox='0 0 24 16', SVG.
+58. **Marine Lv3 Frame 2 (Attack)**: Clean vector pixel art 24x16 marine Lv3 Frame 2 attack: missile launch with smoke trails, explosion sequence over target area, ship rocking from recoil, viewBox='0 0 24 16', SVG.
 
-53. **Robot Infantry**: Clean vector pixel art 24x24 robotic soldier enemy, mechanical joints, red targeting systems, alien invasion force, viewBox='0 0 24 24', SVG.
-54. **Hover Tank**: Clean vector pixel art 24x24 anti-gravity enemy tank, glowing engines, plasma weapons, futuristic threat, viewBox='0 0 24 24', SVG.
-55. **Drone Swarm**: Clean vector pixel art 24x24 cluster of attack drones, propellers spinning, laser weapons, mechanical menace, viewBox='0 0 24 24', SVG.
-56. **Alien Behemoth**: Clean vector pixel art 24x24 massive alien boss creature, tentacles and armor, world-ending scale, epic final enemy, viewBox='0 0 24 24', SVG.
+### 空军 (Air Force) - 空中优势，无视地形
+59. **Air Force Lv1 Frame 1 (Fly)**: Clean vector pixel art 24x16 air force Lv1 Frame 1 fly: fighter jet in flight, contrails 8px, high-speed aerial combat, silver/gray military aircraft, viewBox='0 0 24 16', SVG.
+60. **Air Force Lv1 Frame 2 (Attack)**: Clean vector pixel art 24x16 air force Lv1 Frame 2 attack: machine gun strafing, bullet tracers downward 10px, aerial gunfire pattern, dogfighting maneuvers, viewBox='0 0 24 16', SVG.
+61. **Air Force Lv2 Frame 1 (Fly)**: Clean vector pixel art 24x16 air force Lv2 Frame 1 fly (scale 1.3x): bomber aircraft, heavy payload visible, strategic bombing run, enhanced wingspan, viewBox='0 0 24 16', SVG.
+62. **Air Force Lv2 Frame 2 (Attack)**: Clean vector pixel art 24x16 air force Lv2 Frame 2 attack: bomb drop sequence, explosives falling with trails, ground impact anticipation, tactical strike, viewBox='0 0 24 16', SVG.
+63. **Air Force Lv3 Frame 1 (Fly)**: Clean vector pixel art 24x16 air force Lv3 Frame 1 fly (scale 1.6x): advanced fighter-bomber, missile pods loaded, supersonic contrails, air superiority fighter, viewBox='0 0 24 16', SVG.
+64. **Air Force Lv3 Frame 2 (Attack)**: Clean vector pixel art 24x16 air force Lv3 Frame 2 attack: missile salvo launch, multiple trails converging on target, explosion cloud formation, precision strike, viewBox='0 0 24 16', SVG.
 
-## 🎮 5. UI元素 (8种，128x128 SVG，静态)
+## 🏰 4. 敌方防御塔 (4种，64x64 SVG，2帧动画：Idle/Attack)
 
-57. **Gold Coin Icon**: Clean vector pixel art 128x128 military gold coin icon, eagle and stars, subtle rotation, game currency, viewBox='0 0 128 128', SVG.
-58. **Shop Button**: Clean vector pixel art 128x128 military supply shop button, crates and weapons, pressed state ready, viewBox='0 0 128 128', SVG.
-59. **Relic Speed Icon**: Clean vector pixel art 128x128 speed boot relic, lightning effects, military enhancement, viewBox='0 0 128 128', SVG.
-60. **Relic Damage Icon**: Clean vector pixel art 128x128 damage fist relic, explosion particles, combat power-up, viewBox='0 0 128 128', SVG.
-61. **Relic Gold Icon**: Clean vector pixel art 128x128 gold magnet relic, coin attraction field, economy boost, viewBox='0 0 128 128', SVG.
-62. **Relic Merge Icon**: Clean vector pixel art 128x128 merge hammer relic, fusion energy, upgrade catalyst, viewBox='0 0 128 128', SVG.
-63. **Pause Button**: Clean vector pixel art 128x128 military pause button, crossed rifles, tactical halt, viewBox='0 0 128 128', SVG.
-64. **Victory Banner**: Clean vector pixel art 128x128 victory flag icon, stars and stripes, mission accomplished, viewBox='0 0 128 128', SVG.
+53. **Defense Cannon Tower Frame 1 (Idle)**: Clean vector pixel art 64x64 defense cannon tower Frame 1 idle: military bunker with rotating turret, reinforced concrete walls, red warning lights, army green/gray, viewBox='0 0 64 64', SVG.
+54. **Defense Cannon Tower Frame 2 (Attack)**: Clean vector pixel art 64x64 defense cannon tower Frame 2 attack: turret barrel flash 12px, shell trajectory line forward 15px, recoil shake 5px, smoke cloud rising 8px, viewBox='0 0 64 64', SVG.
+55. **Tank Bunker Frame 1 (Idle)**: Clean vector pixel art 64x64 tank bunker Frame 1 idle (scale 1.2x): armored fortress with multiple gun ports, heavy steel doors, defensive emplacements, olive drab armor, viewBox='0 0 64 64', SVG.
+56. **Tank Bunker Frame 2 (Attack)**: Clean vector pixel art 64x64 tank bunker Frame 2 attack: simultaneous gun port flashes 8px each, intersecting shell trails, bunker trembling with firepower, viewBox='0 0 64 64', SVG.
+57. **Drone Hive Frame 1 (Idle)**: Clean vector pixel art 64x64 drone hive Frame 1 idle: mechanical nest with antenna arrays, glowing energy cores, automated defense systems, metallic blue/gray, viewBox='0 0 64 64', SVG.
+58. **Drone Hive Frame 2 (Attack)**: Clean vector pixel art 64x64 drone hive Frame 2 attack: energy beams firing 10px, drone launch portals opening with particle effects, hive pulsing with power, viewBox='0 0 64 64', SVG.
+59. **Beast Citadel Frame 1 (Idle)**: Clean vector pixel art 64x64 beast citadel Frame 1 idle (scale 1.4x): monstrous fortress with organic armor plating, glowing red eyes, alien defense structure, dark purple/black, viewBox='0 0 64 64', SVG.
+60. **Beast Citadel Frame 2 (Attack)**: Clean vector pixel art 64x64 beast citadel Frame 2 attack: massive energy blast 15px, tentacle-like weapons extending, ground cracking effects, apocalyptic power, viewBox='0 0 64 64', SVG.
+
+## 🎮 5. UI元素 (14种，128x128 SVG，静态)
+
+65. **Gold Coin Icon**: Clean vector pixel art 128x128 military gold coin icon, eagle and stars, subtle rotation, game currency, viewBox='0 0 128 128', SVG.
+66. **Shop Button**: Clean vector pixel art 128x128 military supply shop button, crates and weapons, pressed state ready, viewBox='0 0 128 128', SVG.
+67. **Relic Speed Icon**: Clean vector pixel art 128x128 speed boot relic, lightning effects, military enhancement, viewBox='0 0 128 128', SVG.
+68. **Relic Damage Icon**: Clean vector pixel art 128x128 damage fist relic, explosion particles, combat power-up, viewBox='0 0 128 128', SVG.
+69. **Relic Gold Icon**: Clean vector pixel art 128x128 gold magnet relic, coin attraction field, economy boost, viewBox='0 0 128 128', SVG.
+70. **Relic Merge Icon**: Clean vector pixel art 128x128 merge hammer relic, fusion energy, upgrade catalyst, viewBox='0 0 128 128', SVG.
+71. **Speed Button**: Clean vector pixel art 128x128 game speed control button, fast forward arrows, military stopwatch, tactical acceleration, viewBox='0 0 128 128', SVG.
+72. **Remove Building Icon**: Clean vector pixel art 128x128 building removal tool icon, demolition hammer, refund coins, construction management, viewBox='0 0 128 128', SVG.
+73. **Pause Button**: Clean vector pixel art 128x128 military pause button, crossed rifles, tactical halt, viewBox='0 0 128 128', SVG.
+74. **Victory Banner**: Clean vector pixel art 128x128 victory flag icon, stars and stripes, mission accomplished, viewBox='0 0 128 128', SVG.
+75. **Tower Health Bar Frame**: Clean vector pixel art 128x128 enemy tower health bar frame, military targeting reticle, damage indicators, viewBox='0 0 128 128', SVG.
+76. **Map Expansion Icon**: Clean vector pixel art 128x128 map expansion unlock icon, unfolding battlefield, strategic advancement, viewBox='0 0 128 128', SVG.
+77. **Tower Destroy Progress**: Clean vector pixel art 128x128 tower destruction progress indicator, crumbling fortress, victory meter, viewBox='0 0 128 128', SVG.
+78. **Base Defense Alert**: Clean vector pixel art 128x128 base under attack alert, warning siren, defensive perimeter, viewBox='0 0 128 128', SVG.
 
 ## 📝 生成使用指南
 
@@ -112,6 +139,6 @@ Clean vector pixel art [尺寸] [类型]Lv[级] Frame[1/2] ([Idle/Action]): [详
 4. **风格一致性**：确保所有资源使用统一的军绿色/棕色/灰色调色板
 5. **测试导入**：生成后立即在Godot中测试动画流畅度和视觉效果
 
-**总资源清单**：10 Tiles + 12建筑 + 9单位 + 4敌人 + 8UI = 43个SVG文件
+**总资源清单**：11 Tiles + 12建筑 + 15单位 + 8敌方防御塔 + 14UI = 60个SVG文件
 
 使用这些Prompt，AI将自动生成符合游戏军事主题的完整美术资源！🚀

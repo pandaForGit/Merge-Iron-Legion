@@ -2,6 +2,7 @@ extends Control
 
 var buttons: Dictionary = {}
 var selected_highlight: ColorRect
+var expand_btn: Button
 
 
 func _ready() -> void:
@@ -12,7 +13,6 @@ func _ready() -> void:
 
 
 func _build_shop() -> void:
-	# 底部面板背景
 	var bg := ColorRect.new()
 	bg.color = Color(0.10, 0.12, 0.10, 0.95)
 	bg.position = Vector2(0, 680)
@@ -20,7 +20,6 @@ func _build_shop() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	# 标题
 	var title := Label.new()
 	title.text = "🏗 建筑商店"
 	title.position = Vector2(20, 690)
@@ -28,7 +27,6 @@ func _build_shop() -> void:
 	title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
 	add_child(title)
 
-	# 建筑按钮容器
 	var btn_container := HBoxContainer.new()
 	btn_container.position = Vector2(20, 730)
 	btn_container.size = Vector2(680, 120)
@@ -36,7 +34,6 @@ func _build_shop() -> void:
 	btn_container.add_theme_constant_override("separation", 12)
 	add_child(btn_container)
 
-	# 创建4个建筑按钮
 	for btype in [
 		GameManager.BuildingType.GOLD_MINE,
 		GameManager.BuildingType.BARRACKS,
@@ -47,7 +44,6 @@ func _build_shop() -> void:
 		btn_container.add_child(btn)
 		buttons[btype] = btn
 
-	# 已选建筑信息
 	selected_highlight = ColorRect.new()
 	selected_highlight.color = Color(0.4, 0.6, 0.3, 0.15)
 	selected_highlight.size = Vector2(680, 130)
@@ -56,9 +52,28 @@ func _build_shop() -> void:
 	add_child(selected_highlight)
 	move_child(selected_highlight, bg.get_index() + 1)
 
-	# 建筑描述区域
+	# 地图扩展按钮
+	expand_btn = Button.new()
+	_update_expand_btn_text()
+	expand_btn.position = Vector2(20, 860)
+	expand_btn.size = Vector2(680, 45)
+	expand_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	expand_btn.add_theme_font_size_override("font_size", 16)
+	var expand_style := StyleBoxFlat.new()
+	expand_style.bg_color = Color(0.2, 0.4, 0.6, 0.9)
+	expand_style.corner_radius_top_left = 6
+	expand_style.corner_radius_top_right = 6
+	expand_style.corner_radius_bottom_left = 6
+	expand_style.corner_radius_bottom_right = 6
+	expand_btn.add_theme_stylebox_override("normal", expand_style)
+	var expand_hover := expand_style.duplicate()
+	expand_hover.bg_color = Color(0.25, 0.5, 0.7, 0.95)
+	expand_btn.add_theme_stylebox_override("hover", expand_hover)
+	expand_btn.pressed.connect(_on_expand_pressed)
+	add_child(expand_btn)
+
 	var desc_container := VBoxContainer.new()
-	desc_container.position = Vector2(20, 870)
+	desc_container.position = Vector2(20, 920)
 	desc_container.size = Vector2(680, 200)
 	desc_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(desc_container)
@@ -89,7 +104,6 @@ func _create_building_button(btype: int) -> Button:
 	btn.custom_minimum_size = Vector2(155, 110)
 	btn.mouse_filter = Control.MOUSE_FILTER_STOP
 
-	# 按钮样式
 	var style := StyleBoxFlat.new()
 	var bcolor: Color = GameManager.BUILDING_COLORS[btype]
 	style.bg_color = bcolor.darkened(0.3)
@@ -125,6 +139,31 @@ func _on_building_selected(btype: int) -> void:
 	GameManager.selected_building = btype
 
 
+func _on_expand_pressed() -> void:
+	var main_node = get_tree().root.get_node_or_null("Main")
+	if main_node and main_node.grid_manager:
+		if main_node.grid_manager.expand_grid():
+			_update_expand_btn_text()
+
+
+func _update_expand_btn_text() -> void:
+	var main_node = get_tree().root.get_node_or_null("Main")
+	var cost: int = 0
+	var can_exp: bool = true
+	if main_node and main_node.grid_manager:
+		cost = main_node.grid_manager.get_expansion_cost()
+		can_exp = main_node.grid_manager.can_expand()
+	else:
+		cost = Cfg.grid_expansion_cost_base()
+
+	if can_exp:
+		expand_btn.text = "🗺 扩展地图 (+2列)  $" + str(cost)
+		expand_btn.disabled = not GameManager.can_afford_amount(cost)
+	else:
+		expand_btn.text = "🗺 地图已达最大"
+		expand_btn.disabled = true
+
+
 func _highlight_selected(btype: int) -> void:
 	for bt in buttons:
 		var btn: Button = buttons[bt]
@@ -145,3 +184,5 @@ func _update_affordability(_gold: int) -> void:
 			btn.modulate = Color(1.2, 1.2, 1.0)
 		else:
 			btn.modulate = Color(0.7, 0.7, 0.7)
+
+	_update_expand_btn_text()
