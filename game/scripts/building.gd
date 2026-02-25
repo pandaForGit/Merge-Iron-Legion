@@ -52,24 +52,23 @@ func _produce() -> void:
 			GameManager.gold += amount
 
 		GameManager.BuildingType.BARRACKS:
-			var grid_mgr = get_parent()
-			if grid_mgr:
-				var spawn_pos: Vector2 = grid_mgr.grid_to_world_center(grid_pos)
-				spawn_pos.x += GameManager.CELL_SIZE
-				GameManager.unit_spawn_requested.emit(
-					spawn_pos,
-					GameManager.UnitType.INFANTRY,
-					level
-				)
+			_spawn_unit(GameManager.UnitType.INFANTRY)
+
+		GameManager.BuildingType.DOCK:
+			_spawn_unit(GameManager.UnitType.MARINE)
+
+		GameManager.BuildingType.AIRFIELD:
+			_spawn_unit(GameManager.UnitType.AIR_FORCE)
 
 		GameManager.BuildingType.TAVERN:
-			var grid_mgr = get_parent()
-			if grid_mgr:
-				var spawn_pos: Vector2 = grid_mgr.grid_to_world_center(grid_pos)
-				spawn_pos.x += GameManager.CELL_SIZE
-				var random_type: int = randi() % 3
-				GameManager.unit_spawn_requested.emit(
-					spawn_pos,
-					random_type,
-					level
-				)
+			var random_type: int = randi() % Cfg.unit_type_count()
+			_spawn_unit(random_type)
+
+
+func _spawn_unit(unit_type: int) -> void:
+	var grid_mgr = get_parent()
+	if not grid_mgr:
+		return
+	var spawn_pos: Vector2 = grid_mgr.grid_to_world_center(grid_pos)
+	spawn_pos.y -= GameManager.CELL_SIZE
+	GameManager.unit_spawn_requested.emit(spawn_pos, unit_type, level)

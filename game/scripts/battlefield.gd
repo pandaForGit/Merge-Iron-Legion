@@ -30,7 +30,7 @@ func _spawn_region_towers(region: int) -> void:
 			break
 
 		var pos_data: Dictionary = spawn_positions[pos_idx]
-		var spawn_pos := Vector2(pos_data.get("x", 600), pos_data.get("y", 300))
+		var spawn_pos := Vector2(pos_data.get("x", 360), pos_data.get("y", 300))
 
 		var tower_type: int = i % tower_type_count
 
@@ -48,12 +48,12 @@ func _spawn_region_towers(region: int) -> void:
 
 func _on_tower_destroyed(tower: Area2D) -> void:
 	_towers.erase(tower)
-	var region: int = tower.region
-	if _region_towers_alive.has(region):
-		_region_towers_alive[region] -= 1
+	var r: int = tower.region
+	if _region_towers_alive.has(r):
+		_region_towers_alive[r] -= 1
 
-	if _region_towers_alive.get(region, 0) <= 0:
-		_on_region_cleared(region)
+	if _region_towers_alive.get(r, 0) <= 0:
+		_on_region_cleared(r)
 
 
 func _on_region_cleared(region: int) -> void:

@@ -3,6 +3,7 @@ extends Control
 var buttons: Dictionary = {}
 var selected_highlight: ColorRect
 var expand_btn: Button
+var remove_btn: Button
 
 
 func _ready() -> void:
@@ -23,15 +24,16 @@ func _build_shop() -> void:
 	var title := Label.new()
 	title.text = "🏗 建筑商店"
 	title.position = Vector2(20, 690)
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
 	add_child(title)
 
+	# Row 1: original 4 buildings
 	var btn_container := HBoxContainer.new()
-	btn_container.position = Vector2(20, 730)
-	btn_container.size = Vector2(680, 120)
+	btn_container.position = Vector2(10, 720)
+	btn_container.size = Vector2(700, 90)
 	btn_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn_container.add_theme_constant_override("separation", 12)
+	btn_container.add_theme_constant_override("separation", 8)
 	add_child(btn_container)
 
 	for btype in [
@@ -44,19 +46,55 @@ func _build_shop() -> void:
 		btn_container.add_child(btn)
 		buttons[btype] = btn
 
+	# Row 2: dock + airfield
+	var btn_container2 := HBoxContainer.new()
+	btn_container2.position = Vector2(10, 818)
+	btn_container2.size = Vector2(700, 90)
+	btn_container2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn_container2.add_theme_constant_override("separation", 8)
+	add_child(btn_container2)
+
+	for btype in [
+		GameManager.BuildingType.DOCK,
+		GameManager.BuildingType.AIRFIELD,
+	]:
+		var btn := _create_building_button(btype)
+		btn_container2.add_child(btn)
+		buttons[btype] = btn
+
+	# 移除建筑按钮
+	remove_btn = Button.new()
+	remove_btn.text = "🗑 移除模式: 关"
+	remove_btn.position = Vector2(350, 818)
+	remove_btn.size = Vector2(170, 90)
+	remove_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	remove_btn.add_theme_font_size_override("font_size", 15)
+	var rm_style := StyleBoxFlat.new()
+	rm_style.bg_color = Color(0.5, 0.2, 0.2, 0.9)
+	rm_style.corner_radius_top_left = 8
+	rm_style.corner_radius_top_right = 8
+	rm_style.corner_radius_bottom_left = 8
+	rm_style.corner_radius_bottom_right = 8
+	remove_btn.add_theme_stylebox_override("normal", rm_style)
+	var rm_hover := rm_style.duplicate()
+	rm_hover.bg_color = Color(0.6, 0.25, 0.25, 0.95)
+	remove_btn.add_theme_stylebox_override("hover", rm_hover)
+	remove_btn.pressed.connect(_on_remove_pressed)
+	add_child(remove_btn)
+
 	selected_highlight = ColorRect.new()
 	selected_highlight.color = Color(0.4, 0.6, 0.3, 0.15)
-	selected_highlight.size = Vector2(680, 130)
-	selected_highlight.position = Vector2(20, 725)
+	selected_highlight.size = Vector2(700, 100)
+	selected_highlight.position = Vector2(10, 715)
 	selected_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(selected_highlight)
 	move_child(selected_highlight, bg.get_index() + 1)
 
-	# 地图扩展按钮
+	# 行扩展按钮
 	expand_btn = Button.new()
 	_update_expand_btn_text()
-	expand_btn.position = Vector2(20, 860)
-	expand_btn.size = Vector2(680, 45)
+	expand_btn.position = Vector2(10, 920)
+	expand_btn.size = Vector2(700, 40)
 	expand_btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	expand_btn.add_theme_font_size_override("font_size", 16)
 	var expand_style := StyleBoxFlat.new()
@@ -73,16 +111,18 @@ func _build_shop() -> void:
 	add_child(expand_btn)
 
 	var desc_container := VBoxContainer.new()
-	desc_container.position = Vector2(20, 920)
-	desc_container.size = Vector2(680, 200)
+	desc_container.position = Vector2(10, 970)
+	desc_container.size = Vector2(700, 200)
 	desc_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(desc_container)
 
 	var descriptions: Dictionary = {
-		GameManager.BuildingType.GOLD_MINE: "自动产出金币，相邻建筑+20%产出",
-		GameManager.BuildingType.BARRACKS: "定期训练Lv1步兵，相邻建筑+速度",
-		GameManager.BuildingType.CANNON: "远程固定射击敌人，相邻建筑+射程",
-		GameManager.BuildingType.TAVERN: "随机召唤单位，相邻建筑+合并率",
+		GameManager.BuildingType.GOLD_MINE: "自动产出金币，相邻建筑+20%",
+		GameManager.BuildingType.BARRACKS: "训练步兵(陆军)，相邻+速度",
+		GameManager.BuildingType.CANNON: "远程固定射击，相邻+射程",
+		GameManager.BuildingType.TAVERN: "随机召唤各类兵种",
+		GameManager.BuildingType.DOCK: "训练海兵(水军)，水路突击",
+		GameManager.BuildingType.AIRFIELD: "训练空军，无视地形",
 	}
 
 	for btype in descriptions:
@@ -90,7 +130,7 @@ func _build_shop() -> void:
 		var bname: String = GameManager.BUILDING_NAMES[btype]
 		var cost: int = GameManager.BUILDING_COSTS[btype]
 		line.text = "%s ($%d): %s" % [bname, cost, descriptions[btype]]
-		line.add_theme_font_size_override("font_size", 14)
+		line.add_theme_font_size_override("font_size", 13)
 		line.add_theme_color_override("font_color", Color(0.65, 0.7, 0.65))
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_container.add_child(line)
@@ -101,7 +141,7 @@ func _create_building_button(btype: int) -> Button:
 	var bname: String = GameManager.BUILDING_NAMES[btype]
 	var cost: int = GameManager.BUILDING_COSTS[btype]
 	btn.text = bname + "\n$" + str(cost)
-	btn.custom_minimum_size = Vector2(155, 110)
+	btn.custom_minimum_size = Vector2(120, 85)
 	btn.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var style := StyleBoxFlat.new()
@@ -124,7 +164,7 @@ func _create_building_button(btype: int) -> Button:
 	pressed_style.border_color = Color.WHITE
 	btn.add_theme_stylebox_override("pressed", pressed_style)
 
-	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_font_size_override("font_size", 16)
 	btn.pressed.connect(_on_building_selected.bind(btype))
 
 	return btn
@@ -133,10 +173,38 @@ func _create_building_button(btype: int) -> Button:
 func _connect_signals() -> void:
 	GameManager.gold_changed.connect(_update_affordability)
 	GameManager.building_selected.connect(_highlight_selected)
+	GameManager.remove_mode_changed.connect(_update_remove_btn)
 
 
 func _on_building_selected(btype: int) -> void:
+	if GameManager.is_remove_mode:
+		GameManager.toggle_remove_mode()
 	GameManager.selected_building = btype
+
+
+func _on_remove_pressed() -> void:
+	GameManager.toggle_remove_mode()
+
+
+func _update_remove_btn(enabled: bool) -> void:
+	if enabled:
+		remove_btn.text = "🗑 移除模式: 开"
+		var active_style := StyleBoxFlat.new()
+		active_style.bg_color = Color(0.7, 0.2, 0.2, 0.95)
+		active_style.corner_radius_top_left = 8
+		active_style.corner_radius_top_right = 8
+		active_style.corner_radius_bottom_left = 8
+		active_style.corner_radius_bottom_right = 8
+		remove_btn.add_theme_stylebox_override("normal", active_style)
+	else:
+		remove_btn.text = "🗑 移除模式: 关"
+		var normal_style := StyleBoxFlat.new()
+		normal_style.bg_color = Color(0.5, 0.2, 0.2, 0.9)
+		normal_style.corner_radius_top_left = 8
+		normal_style.corner_radius_top_right = 8
+		normal_style.corner_radius_bottom_left = 8
+		normal_style.corner_radius_bottom_right = 8
+		remove_btn.add_theme_stylebox_override("normal", normal_style)
 
 
 func _on_expand_pressed() -> void:
@@ -154,13 +222,13 @@ func _update_expand_btn_text() -> void:
 		cost = main_node.grid_manager.get_expansion_cost()
 		can_exp = main_node.grid_manager.can_expand()
 	else:
-		cost = Cfg.grid_expansion_cost_base()
+		cost = Cfg.row_expansion_cost_base()
 
 	if can_exp:
-		expand_btn.text = "🗺 扩展地图 (+2列)  $" + str(cost)
+		expand_btn.text = "📐 扩展土地 (+1行)  $" + str(cost)
 		expand_btn.disabled = not GameManager.can_afford_amount(cost)
 	else:
-		expand_btn.text = "🗺 地图已达最大"
+		expand_btn.text = "📐 土地已达最大"
 		expand_btn.disabled = true
 
 

@@ -69,7 +69,6 @@ func _process(delta: float) -> void:
 	if _damage_flash_timer > 0:
 		_damage_flash_timer -= delta
 
-	# 攻击逻辑
 	if not _current_target or not is_instance_valid(_current_target) or not _current_target.is_active:
 		_current_target = _find_nearest_unit()
 
@@ -83,7 +82,6 @@ func _process(delta: float) -> void:
 		else:
 			_current_target = null
 
-	# 生产敌人
 	_spawn_timer += delta
 	if _spawn_timer >= spawn_interval:
 		_spawn_timer = 0.0
@@ -116,7 +114,7 @@ func _do_attack() -> void:
 
 
 func _request_spawn_enemy() -> void:
-	var spawn_pos := Vector2(global_position.x - 30, global_position.y + randf_range(-20, 20))
+	var spawn_pos := Vector2(global_position.x + randf_range(-20, 20), global_position.y + 30)
 	spawn_enemy_requested.emit(spawn_pos, spawn_type, _difficulty_mult)
 
 
@@ -145,7 +143,6 @@ func _draw() -> void:
 	if _damage_flash_timer > 0:
 		draw_color = Color.WHITE
 
-	# 塔身（八边形）
 	var points: PackedVector2Array = PackedVector2Array()
 	var r := half.x
 	for i in 8:
@@ -154,16 +151,13 @@ func _draw() -> void:
 	draw_colored_polygon(points, draw_color)
 	draw_polyline(points + PackedVector2Array([points[0]]), draw_color.lightened(0.4), 2.0)
 
-	# 内部十字（表示炮口）
 	var cross_size := r * 0.4
 	draw_line(Vector2(-cross_size, 0), Vector2(cross_size, 0), Color.WHITE * Color(1, 1, 1, 0.5), 2.0)
 	draw_line(Vector2(0, -cross_size), Vector2(0, cross_size), Color.WHITE * Color(1, 1, 1, 0.5), 2.0)
 
-	# 名称
 	var font: Font = ThemeDB.fallback_font
 	draw_string(font, Vector2(-12, -half.y - 10), display_name.left(2), HORIZONTAL_ALIGNMENT_CENTER, 28, 11, Color.WHITE)
 
-	# HP条
 	var bar_w: float = 30.0
 	var bar_h: float = 5.0
 	var bar_y: float = half.y + 4
@@ -172,12 +166,10 @@ func _draw() -> void:
 	var hp_color := Color(0.85, 0.15, 0.15) if hp_ratio > 0.3 else Color(1.0, 0.3, 0.1)
 	draw_rect(Rect2(Vector2(-bar_w / 2, bar_y), Vector2(bar_w * hp_ratio, bar_h)), hp_color)
 
-	# 生产进度条（塔底部）
 	if GameManager.state == GameManager.GameState.PLAYING and spawn_interval > 0:
 		var prog: float = clampf(_spawn_timer / spawn_interval, 0.0, 1.0)
 		var prog_y: float = bar_y + bar_h + 3
 		draw_rect(Rect2(Vector2(-bar_w / 2, prog_y), Vector2(bar_w, 3)), Color(0.1, 0.1, 0.1, 0.5))
 		draw_rect(Rect2(Vector2(-bar_w / 2, prog_y), Vector2(bar_w * prog, 3)), Color(0.9, 0.6, 0.2, 0.8))
 
-	# 攻击范围指示
 	draw_arc(Vector2.ZERO, attack_range, 0, TAU, 32, Color(0.8, 0.2, 0.2, 0.08), 1.0)

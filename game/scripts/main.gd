@@ -10,14 +10,13 @@ var commander_panel: Control
 var result_popup: Control
 var camera: Camera2D
 
-# 地图拖拽滚动
 var _is_map_dragging: bool = false
-var _drag_start_x: float = 0.0
-var _cam_start_x: float = 0.0
+var _drag_start_y: float = 0.0
+var _cam_start_y: float = 0.0
 const DRAG_THRESHOLD := 8.0
 var _drag_total_moved: float = 0.0
-var _cam_min_x: float = 360.0
-var _cam_max_x: float = 360.0
+var _cam_min_y: float = 0.0
+var _cam_max_y: float = 640.0
 
 
 func _ready() -> void:
@@ -95,35 +94,35 @@ func _connect_signals() -> void:
 
 
 func _update_cam_limits() -> void:
-	_cam_min_x = 360.0
-	var furthest_tower_x: float = 660.0
+	_cam_max_y = 640.0
+	var highest_tower_y: float = 400.0
 	var towers = get_tree().get_nodes_in_group("enemy_towers")
 	for t in towers:
-		if t.global_position.x > furthest_tower_x:
-			furthest_tower_x = t.global_position.x
-	_cam_max_x = max(_cam_min_x, furthest_tower_x - 100.0)
+		if t.global_position.y < highest_tower_y:
+			highest_tower_y = t.global_position.y
+	_cam_min_y = min(_cam_max_y, highest_tower_y + 200.0)
 
 
-# --- 地图拖拽滚动（上半屏战场区域）---
+# --- 垂直地图拖拽 ---
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
-				if event.position.y < 670 and event.position.y > 70:
+				if event.position.y > 70 and event.position.y < 670:
 					_is_map_dragging = true
-					_drag_start_x = event.position.x
-					_cam_start_x = camera.position.x
+					_drag_start_y = event.position.y
+					_cam_start_y = camera.position.y
 					_drag_total_moved = 0.0
 			else:
 				_is_map_dragging = false
 
 	elif event is InputEventMouseMotion and _is_map_dragging:
-		var dx: float = _drag_start_x - event.position.x
-		_drag_total_moved += abs(event.position.x - _drag_start_x)
+		var dy: float = _drag_start_y - event.position.y
+		_drag_total_moved += abs(event.position.y - _drag_start_y)
 		if _drag_total_moved > DRAG_THRESHOLD:
 			_update_cam_limits()
-			camera.position.x = clampf(_cam_start_x + dx, _cam_min_x, _cam_max_x)
+			camera.position.y = clampf(_cam_start_y - dy, _cam_min_y, _cam_max_y)
 
 
 func start_battle() -> void:
@@ -133,7 +132,7 @@ func start_battle() -> void:
 		return
 	GameManager.state = GameManager.GameState.PLAYING
 	if hud.has_method("show_info"):
-		hud.show_info("⚔ 战斗开始！建造和合并建筑来摧毁敌方防御塔！")
+		hud.show_info("⚔ 战斗开始！单位自动侦测并攻击视野内目标！")
 
 
 func _on_region_unlocked(region: int) -> void:
@@ -143,11 +142,13 @@ func _on_region_unlocked(region: int) -> void:
 		hud.show_info("✅ 区域 %d 已解锁！+%d金币  选择遗物..." % [region, bonus_text])
 
 	GameManager.state = GameManager.GameState.RELIC_SELECT
+	GameManager.pause_for_relic()
 	var options: Array = GameManager.pick_random_relics()
 	relic_popup.show_relics(options)
 
 
 func _on_relic_selected(_rtype: int) -> void:
+	GameManager.resume_from_relic()
 	var data: Dictionary = GameManager.RELIC_DATA[_rtype]
 	if hud.has_method("show_info"):
 		hud.show_info("🎁 获得「%s」！继续推进！" % data["name"])

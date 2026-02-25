@@ -1,13 +1,14 @@
 {
 	"grid": {
-		"initial_cols": 2,
-		"max_cols": 24,
-		"rows": 2,
+		"cols": 8,
+		"initial_rows": 2,
+		"max_rows": 8,
 		"cell_size": 64,
 		"viewport_width": 720,
-		"offset_y": 100,
-		"expansion_cost_base": 500,
-		"expansion_cost_multiplier": 1.5
+		"grid_bottom_y": 660,
+		"row_expansion_cost_base": 300,
+		"row_expansion_cost_multiplier": 1.4,
+		"building_remove_refund_ratio": 0.6
 	},
 
 	"economy": {
@@ -24,10 +25,12 @@
 	},
 
 	"buildings": {
-		"gold_mine":  { "cost": 50,  "production_interval": 3.0, "name": "金矿", "color": [0.72, 0.58, 0.15] },
-		"barracks":   { "cost": 100, "production_interval": 10, "name": "兵营", "color": [0.25, 0.50, 0.25] },
-		"cannon":     { "cost": 150, "production_interval": 0.0, "name": "炮台", "color": [0.45, 0.45, 0.50] },
-		"tavern":     { "cost": 200, "production_interval": 15, "name": "酒馆", "color": [0.55, 0.28, 0.50] }
+		"gold_mine":  { "cost": 50,  "production_interval": 3.0,  "name": "金矿", "color": [0.72, 0.58, 0.15] },
+		"barracks":   { "cost": 100, "production_interval": 10.0, "name": "兵营", "color": [0.25, 0.50, 0.25] },
+		"cannon":     { "cost": 150, "production_interval": 0.0,  "name": "炮台", "color": [0.45, 0.45, 0.50] },
+		"tavern":     { "cost": 200, "production_interval": 15.0, "name": "酒馆", "color": [0.55, 0.28, 0.50] },
+		"dock":       { "cost": 180, "production_interval": 12.0, "name": "码头", "color": [0.20, 0.45, 0.70] },
+		"airfield":   { "cost": 220, "production_interval": 14.0, "name": "机场", "color": [0.50, 0.55, 0.65] }
 	},
 
 	"units": {
@@ -36,9 +39,11 @@
 		"scale_base": 0.8,
 		"scale_per_level": 0.25,
 		"types": {
-			"infantry":  { "hp": 50,  "damage": 15, "speed": 40, "attack_range": 35.0,  "attack_cooldown": 0.8, "name": "步兵", "label": "兵", "color": [0.30, 0.60, 0.30] },
-			"tank":      { "hp": 150, "damage": 40, "speed": 25, "attack_range": 120.0, "attack_cooldown": 1.5, "name": "坦克", "label": "坦", "color": [0.50, 0.50, 0.55] },
-			"artillery": { "hp": 80,  "damage": 25, "speed": 10, "attack_range": 200.0, "attack_cooldown": 2.0, "name": "火炮", "label": "炮", "color": [0.60, 0.45, 0.25] }
+			"infantry":  { "hp": 50,  "damage": 15, "speed": 40, "attack_range": 35.0,  "attack_cooldown": 0.8, "vision_range": 200.0, "move_type": "land",  "name": "步兵", "label": "兵", "color": [0.30, 0.60, 0.30] },
+			"tank":      { "hp": 150, "damage": 40, "speed": 25, "attack_range": 120.0, "attack_cooldown": 1.5, "vision_range": 250.0, "move_type": "land",  "name": "坦克", "label": "坦", "color": [0.50, 0.50, 0.55] },
+			"artillery": { "hp": 80,  "damage": 25, "speed": 10, "attack_range": 200.0, "attack_cooldown": 2.0, "vision_range": 300.0, "move_type": "land",  "name": "火炮", "label": "炮", "color": [0.60, 0.45, 0.25] },
+			"marine":    { "hp": 60,  "damage": 18, "speed": 50, "attack_range": 40.0,  "attack_cooldown": 0.9, "vision_range": 220.0, "move_type": "water", "name": "海兵", "label": "海", "color": [0.20, 0.50, 0.80] },
+			"air_force": { "hp": 40,  "damage": 20, "speed": 80, "attack_range": 60.0,  "attack_cooldown": 0.7, "vision_range": 350.0, "move_type": "air",   "name": "空军", "label": "空", "color": [0.55, 0.60, 0.75] }
 		}
 	},
 
@@ -54,24 +59,24 @@
 	"enemy_towers": {
 		"tower_count_per_expansion": 3,
 		"spawn_positions": [
-			{ "x": 660, "y": 180 },
-			{ "x": 680, "y": 350 },
-			{ "x": 660, "y": 520 },
-			{ "x": 820, "y": 220 },
-			{ "x": 850, "y": 400 },
-			{ "x": 820, "y": 540 },
-			{ "x": 1000, "y": 250 },
-			{ "x": 1030, "y": 420 },
-			{ "x": 1000, "y": 550 },
-			{ "x": 1200, "y": 280 },
-			{ "x": 1220, "y": 440 },
-			{ "x": 1200, "y": 560 }
+			{ "x": 150, "y": 400 },
+			{ "x": 360, "y": 350 },
+			{ "x": 570, "y": 400 },
+			{ "x": 120, "y": 200 },
+			{ "x": 360, "y": 150 },
+			{ "x": 600, "y": 200 },
+			{ "x": 180, "y": 0 },
+			{ "x": 360, "y": -50 },
+			{ "x": 540, "y": 0 },
+			{ "x": 150, "y": -250 },
+			{ "x": 360, "y": -300 },
+			{ "x": 570, "y": -250 }
 		],
 		"types": [
-			{ "name": "防御炮台", "hp": 300, "damage": 20, "attack_range": 150.0, "cooldown": 1.2, "spawn_interval": 12.0, "spawn_type": 0, "color": [0.80, 0.30, 0.30], "icon": "🏰" },
-			{ "name": "坦克碉堡", "hp": 500, "damage": 35, "attack_range": 120.0, "cooldown": 1.8, "spawn_interval": 18.0, "spawn_type": 1, "color": [0.70, 0.25, 0.35], "icon": "🛡️" },
+			{ "name": "防御炮台",   "hp": 300, "damage": 20, "attack_range": 150.0, "cooldown": 1.2, "spawn_interval": 12.0, "spawn_type": 0, "color": [0.80, 0.30, 0.30], "icon": "🏰" },
+			{ "name": "坦克碉堡",   "hp": 500, "damage": 35, "attack_range": 120.0, "cooldown": 1.8, "spawn_interval": 18.0, "spawn_type": 1, "color": [0.70, 0.25, 0.35], "icon": "🛡️" },
 			{ "name": "无人机巢穴", "hp": 200, "damage": 15, "attack_range": 180.0, "cooldown": 0.9, "spawn_interval": 8.0,  "spawn_type": 2, "color": [0.75, 0.35, 0.40], "icon": "🚁" },
-			{ "name": "巨兽要塞", "hp": 800, "damage": 50, "attack_range": 100.0, "cooldown": 2.5, "spawn_interval": 25.0, "spawn_type": 3, "color": [0.65, 0.20, 0.25], "icon": "🏯" }
+			{ "name": "巨兽要塞",   "hp": 800, "damage": 50, "attack_range": 100.0, "cooldown": 2.5, "spawn_interval": 25.0, "spawn_type": 3, "color": [0.65, 0.20, 0.25], "icon": "🏯" }
 		]
 	},
 
@@ -82,12 +87,11 @@
 	},
 
 	"battlefield": {
-		"left_boundary": 50.0,
-		"right_boundary": 1400.0,
-		"spawn_y_min": 130.0,
-		"spawn_y_max": 580.0,
-		"spawn_x_offset": 30.0,
-		"unit_exit_offset": 100.0,
+		"top_boundary": -400.0,
+		"bottom_boundary": 680.0,
+		"spawn_x_min": 100.0,
+		"spawn_x_max": 620.0,
+		"unit_exit_offset": 80.0,
 		"max_breaches": 5,
 		"merge_distance": 40.0
 	},
@@ -95,11 +99,13 @@
 	"map_expansion": {
 		"initial_regions": 1,
 		"max_regions": 4,
-		"region_width": 200,
 		"towers_per_region": 3,
-		"victory_towers_destroyed": 8,
-		"expansion_unlock_gold": 1000,
-		"expansion_unlock_multiplier": 2.0
+		"victory_towers_destroyed": 8
+	},
+
+	"game_speed": {
+		"normal": 1.0,
+		"fast": 2.0
 	},
 
 	"relics": {

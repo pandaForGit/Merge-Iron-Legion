@@ -4,8 +4,8 @@ const CONFIG_PATH := "res://config/game_config.json"
 
 var _data: Dictionary = {}
 
-var _building_keys: Array = ["gold_mine", "barracks", "cannon", "tavern"]
-var _unit_keys: Array = ["infantry", "tank", "artillery"]
+var _building_keys: Array = ["gold_mine", "barracks", "cannon", "tavern", "dock", "airfield"]
+var _unit_keys: Array = ["infantry", "tank", "artillery", "marine", "air_force"]
 var _commander_keys: Array = ["balanced", "producer", "firepower"]
 var _relic_keys: Array = [
 	"gold_boost", "damage_boost", "speed_boost", "hp_boost",
@@ -55,14 +55,14 @@ func arr_to_color(arr: Array) -> Color:
 
 # --- Grid ---
 
-func grid_initial_cols() -> int:
-	return get_value("grid.initial_cols", 8)
+func grid_cols() -> int:
+	return get_value("grid.cols", 8)
 
-func grid_max_cols() -> int:
-	return get_value("grid.max_cols", 24)
+func grid_initial_rows() -> int:
+	return get_value("grid.initial_rows", 2)
 
-func grid_rows() -> int:
-	return get_value("grid.rows", 8)
+func grid_max_rows() -> int:
+	return get_value("grid.max_rows", 8)
 
 func grid_cell_size() -> int:
 	return get_value("grid.cell_size", 64)
@@ -70,14 +70,17 @@ func grid_cell_size() -> int:
 func grid_viewport_width() -> int:
 	return get_value("grid.viewport_width", 720)
 
-func grid_offset_y() -> float:
-	return get_value("grid.offset_y", 100.0)
+func grid_bottom_y() -> float:
+	return get_value("grid.grid_bottom_y", 660.0)
 
-func grid_expansion_cost_base() -> int:
-	return get_value("grid.expansion_cost_base", 500)
+func row_expansion_cost_base() -> int:
+	return get_value("grid.row_expansion_cost_base", 300)
 
-func grid_expansion_cost_multiplier() -> float:
-	return get_value("grid.expansion_cost_multiplier", 1.5)
+func row_expansion_cost_multiplier() -> float:
+	return get_value("grid.row_expansion_cost_multiplier", 1.4)
+
+func building_remove_refund_ratio() -> float:
+	return get_value("grid.building_remove_refund_ratio", 0.6)
 
 
 # --- Economy ---
@@ -155,8 +158,11 @@ func unit_scale_base() -> float:
 func unit_scale_per_level() -> float:
 	return get_value("units.scale_per_level", 0.25)
 
+func unit_type_count() -> int:
+	return _unit_keys.size()
 
-# --- Enemies (mobile units, kept for potential tower spawns) ---
+
+# --- Enemies ---
 
 func enemy_data(type_idx: int) -> Dictionary:
 	var types: Array = get_value("enemies.types", [])
@@ -197,9 +203,6 @@ func map_initial_regions() -> int:
 func map_max_regions() -> int:
 	return get_value("map_expansion.max_regions", 4)
 
-func map_region_width() -> int:
-	return get_value("map_expansion.region_width", 200)
-
 func map_towers_per_region() -> int:
 	return get_value("map_expansion.towers_per_region", 3)
 
@@ -221,29 +224,35 @@ func level_multiplier_base() -> float:
 
 # --- Battlefield ---
 
-func battlefield_left() -> float:
-	return get_value("battlefield.left_boundary", 50.0)
+func battlefield_top() -> float:
+	return get_value("battlefield.top_boundary", -400.0)
 
-func battlefield_right() -> float:
-	return get_value("battlefield.right_boundary", 720.0)
+func battlefield_bottom() -> float:
+	return get_value("battlefield.bottom_boundary", 680.0)
 
-func spawn_y_min() -> float:
-	return get_value("battlefield.spawn_y_min", 130.0)
+func spawn_x_min() -> float:
+	return get_value("battlefield.spawn_x_min", 100.0)
 
-func spawn_y_max() -> float:
-	return get_value("battlefield.spawn_y_max", 580.0)
-
-func spawn_x_offset() -> float:
-	return get_value("battlefield.spawn_x_offset", 30.0)
+func spawn_x_max() -> float:
+	return get_value("battlefield.spawn_x_max", 620.0)
 
 func unit_exit_offset() -> float:
-	return get_value("battlefield.unit_exit_offset", 50.0)
+	return get_value("battlefield.unit_exit_offset", 80.0)
 
 func max_breaches() -> int:
 	return get_value("battlefield.max_breaches", 5)
 
 func merge_distance() -> float:
 	return get_value("battlefield.merge_distance", 40.0)
+
+
+# --- Game Speed ---
+
+func game_speed_normal() -> float:
+	return get_value("game_speed.normal", 1.0)
+
+func game_speed_fast() -> float:
+	return get_value("game_speed.fast", 2.0)
 
 
 # --- Relics ---

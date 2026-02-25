@@ -8,6 +8,8 @@ var damage: float = 15.0
 var speed: float = 40.0
 var attack_range: float = 35.0
 var attack_cooldown: float = 0.8
+var vision_range: float = 200.0
+var move_type: String = "land"
 
 var _attack_timer: float = 0.0
 var _current_target: Node2D = null
@@ -31,6 +33,8 @@ func _apply_stats() -> void:
 	speed = base["speed"] * (1.0 + (level - 1) * Cfg.unit_level_speed_bonus()) * GameManager.get_speed_multiplier()
 	attack_range = GameManager.UNIT_ATTACK_RANGES[unit_type]
 	attack_cooldown = GameManager.UNIT_ATTACK_COOLDOWNS[unit_type] / GameManager.get_attack_speed_multiplier()
+	vision_range = GameManager.UNIT_VISION_RANGES.get(unit_type, 200.0) + level * 20.0
+	move_type = GameManager.UNIT_MOVE_TYPES.get(unit_type, "land")
 	scale = Vector2.ONE * (Cfg.unit_scale_base() + level * Cfg.unit_scale_per_level())
 
 
@@ -39,7 +43,7 @@ func _process(delta: float) -> void:
 		return
 
 	if not _current_target or not is_instance_valid(_current_target) or not _current_target.is_active:
-		_current_target = _find_nearest_target()
+		_current_target = _find_target_in_vision()
 
 	if _current_target:
 		var dist: float = global_position.distance_to(_current_target.global_position)
@@ -49,21 +53,21 @@ func _process(delta: float) -> void:
 				_attack_timer = 0.0
 				_do_attack()
 		else:
-			global_position.x += speed * delta
+			var dir: Vector2 = (_current_target.global_position - global_position).normalized()
+			global_position += dir * speed * delta
 	else:
-		global_position.x += speed * delta
+		global_position.y -= speed * delta * 0.5
 
-	if global_position.x > Cfg.battlefield_right() + Cfg.unit_exit_offset():
+	if global_position.y < Cfg.battlefield_top() - Cfg.unit_exit_offset():
 		_die()
 
 	queue_redraw()
 
 
-func _find_nearest_target() -> Node2D:
+func _find_target_in_vision() -> Node2D:
 	var best: Node2D = null
-	var best_dist: float = 9999.0
+	var best_dist: float = vision_range
 
-	# Search enemy towers first (primary targets)
 	var towers: Array = get_tree().get_nodes_in_group("enemy_towers")
 	for t in towers:
 		if not t.is_active:
@@ -73,7 +77,6 @@ func _find_nearest_target() -> Node2D:
 			best_dist = d
 			best = t
 
-	# Also search mobile enemies if any exist
 	var enemies: Array = get_tree().get_nodes_in_group("enemies")
 	for e in enemies:
 		if not e.is_active:
@@ -110,6 +113,10 @@ func _calc_damage(target: Node2D) -> float:
 		GameManager.UnitType.ARTILLERY:
 			if etype == 1: dmg *= GameManager.COUNTER_BONUS
 			elif etype == 0: dmg *= GameManager.COUNTER_PENALTY
+		GameManager.UnitType.MARINE:
+			if etype == 2: dmg *= GameManager.COUNTER_BONUS
+		GameManager.UnitType.AIR_FORCE:
+			if etype == 0: dmg *= GameManager.COUNTER_BONUS
 	return dmg
 
 
@@ -125,14 +132,25 @@ func _die() -> void:
 	queue_free()
 
 
-# --- 绘制（占位色块）---
+# --- 绘制 ---
 
 func _draw() -> void:
 	var base_color: Color = GameManager.UNIT_COLORS.get(unit_type, Color.WHITE)
 	var half := Vector2(10, 16)
 
-	draw_rect(Rect2(-half, half * 2), base_color)
-	draw_rect(Rect2(-half, half * 2), base_color.lightened(0.35), false, 1.5)
+	if move_type == "air":
+		var tri := PackedVector2Array([
+			Vector2(0, -half.y), Vector2(half.x, half.y), Vector2(-half.x, half.y)
+		])
+		draw_colored_polygon(tri, base_color)
+		draw_polyline(tri + PackedVector2Array([tri[0]]), base_color.lightened(0.35), 1.5)
+	elif move_type == "water":
+		draw_rect(Rect2(-half, half * 2), base_color)
+		draw_line(Vector2(-half.x, half.y - 3), Vector2(half.x, half.y - 3), Color(0.4, 0.7, 1.0, 0.6), 2.0)
+		draw_rect(Rect2(-half, half * 2), base_color.lightened(0.35), false, 1.5)
+	else:
+		draw_rect(Rect2(-half, half * 2), base_color)
+		draw_rect(Rect2(-half, half * 2), base_color.lightened(0.35), false, 1.5)
 
 	for i in level:
 		var stripe_y: float = -half.y + 4 + i * 6
@@ -141,7 +159,6 @@ func _draw() -> void:
 	var font: Font = ThemeDB.fallback_font
 	var label: String = GameManager.UNIT_LABELS.get(unit_type, "?")
 	draw_string(font, Vector2(-6, 4), label, HORIZONTAL_ALIGNMENT_CENTER, 14, 13, Color.WHITE)
-
 	draw_string(font, Vector2(-4, 16), str(level), HORIZONTAL_ALIGNMENT_CENTER, 10, 10, Color(1, 1, 0.6))
 
 	var bar_w: float = 18.0

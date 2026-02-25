@@ -10,10 +10,12 @@ signal all_towers_cleared
 signal enemy_breached
 signal relic_chosen(relic_type: RelicType)
 signal commander_changed(cmd: Commander)
+signal game_speed_changed(new_speed: float)
+signal remove_mode_changed(enabled: bool)
 
 enum GameState { SETUP, PLAYING, RELIC_SELECT, VICTORY, GAME_OVER }
-enum BuildingType { GOLD_MINE, BARRACKS, CANNON, TAVERN }
-enum UnitType { INFANTRY, TANK, ARTILLERY }
+enum BuildingType { GOLD_MINE, BARRACKS, CANNON, TAVERN, DOCK, AIRFIELD }
+enum UnitType { INFANTRY, TANK, ARTILLERY, MARINE, AIR_FORCE }
 enum RelicType {
 	GOLD_BOOST, DAMAGE_BOOST, SPEED_BOOST, HP_BOOST,
 	PROD_SPEED, ATTACK_SPEED, MERGE_DISCOUNT, EXTRA_LIFE,
@@ -23,8 +25,8 @@ enum Commander { BALANCED, PRODUCER, FIREPOWER }
 # ====== 从 Cfg 加载的常量 ======
 
 var GRID_COLS: int = 8
-var GRID_MAX_COLS: int = 24
-var GRID_ROWS: int = 8
+var GRID_ROWS: int = 2
+var GRID_MAX_ROWS: int = 8
 var CELL_SIZE: int = 64
 
 var BUILDING_COSTS: Dictionary = {}
@@ -39,6 +41,8 @@ var UNIT_NAMES: Dictionary = {}
 var UNIT_BASE_STATS: Dictionary = {}
 var UNIT_ATTACK_RANGES: Dictionary = {}
 var UNIT_ATTACK_COOLDOWNS: Dictionary = {}
+var UNIT_VISION_RANGES: Dictionary = {}
+var UNIT_MOVE_TYPES: Dictionary = {}
 var UNIT_COLORS: Dictionary = {}
 var UNIT_LABELS: Dictionary = {}
 var MAX_UNIT_LEVEL: int = 3
@@ -50,8 +54,8 @@ var COUNTER_BONUS: float = 1.5
 var COUNTER_PENALTY: float = 0.7
 
 var MERGE_DISTANCE: float = 40.0
-var BATTLEFIELD_LEFT: float = 50.0
-var BATTLEFIELD_RIGHT: float = 1400.0
+var BATTLEFIELD_TOP: float = -400.0
+var BATTLEFIELD_BOTTOM: float = 680.0
 
 var RELIC_DATA: Dictionary = {}
 var COMMANDER_DATA: Dictionary = {}
@@ -62,6 +66,10 @@ var active_relics: Array = []
 var elapsed_time: float = 0.0
 var breach_count: int = 0
 var max_breaches: int = 5
+
+var current_game_speed: float = 1.0
+var _pre_pause_speed: float = 1.0
+var is_remove_mode: bool = false
 
 var current_commander: Commander = Commander.BALANCED:
 	set(value):
@@ -98,12 +106,12 @@ func _process(delta: float) -> void:
 
 
 func _load_from_config() -> void:
-	GRID_COLS = Cfg.grid_initial_cols()
-	GRID_MAX_COLS = Cfg.grid_max_cols()
-	GRID_ROWS = Cfg.grid_rows()
+	GRID_COLS = Cfg.grid_cols()
+	GRID_ROWS = Cfg.grid_initial_rows()
+	GRID_MAX_ROWS = Cfg.grid_max_rows()
 	CELL_SIZE = Cfg.grid_cell_size()
 
-	for btype in [BuildingType.GOLD_MINE, BuildingType.BARRACKS, BuildingType.CANNON, BuildingType.TAVERN]:
+	for btype in [BuildingType.GOLD_MINE, BuildingType.BARRACKS, BuildingType.CANNON, BuildingType.TAVERN, BuildingType.DOCK, BuildingType.AIRFIELD]:
 		BUILDING_COSTS[btype] = Cfg.building_cost(btype)
 		BUILDING_NAMES[btype] = Cfg.building_name(btype)
 		BUILDING_COLORS[btype] = Cfg.building_color(btype)
@@ -112,11 +120,13 @@ func _load_from_config() -> void:
 	GOLD_MINE_OUTPUT = Cfg.gold_mine_output()
 	ADJACENT_BUFF = Cfg.adjacent_buff()
 
-	for utype in [UnitType.INFANTRY, UnitType.TANK, UnitType.ARTILLERY]:
+	for utype in [UnitType.INFANTRY, UnitType.TANK, UnitType.ARTILLERY, UnitType.MARINE, UnitType.AIR_FORCE]:
 		var d: Dictionary = Cfg.unit_data(utype)
 		UNIT_BASE_STATS[utype] = {"hp": d.get("hp", 50), "damage": d.get("damage", 15), "speed": d.get("speed", 40)}
 		UNIT_ATTACK_RANGES[utype] = d.get("attack_range", 35.0)
 		UNIT_ATTACK_COOLDOWNS[utype] = d.get("attack_cooldown", 1.0)
+		UNIT_VISION_RANGES[utype] = d.get("vision_range", 200.0)
+		UNIT_MOVE_TYPES[utype] = d.get("move_type", "land")
 		UNIT_COLORS[utype] = Cfg.arr_to_color(d.get("color", [0.5, 0.5, 0.5]))
 		UNIT_LABELS[utype] = d.get("label", "?")
 		UNIT_NAMES[utype] = d.get("name", "???")
@@ -141,8 +151,8 @@ func _load_from_config() -> void:
 	COUNTER_PENALTY = Cfg.counter_penalty()
 
 	MERGE_DISTANCE = Cfg.merge_distance()
-	BATTLEFIELD_LEFT = Cfg.battlefield_left()
-	BATTLEFIELD_RIGHT = Cfg.battlefield_right()
+	BATTLEFIELD_TOP = Cfg.battlefield_top()
+	BATTLEFIELD_BOTTOM = Cfg.battlefield_bottom()
 
 	max_breaches = Cfg.max_breaches()
 	gold = Cfg.starting_gold()
@@ -165,6 +175,34 @@ func _load_from_config() -> void:
 			"icon": cd.get("icon", "?"),
 			"color": Cfg.arr_to_color(cd.get("color", [0.5, 0.5, 0.5])),
 		}
+
+
+# ====== 游戏速度控制 ======
+
+func toggle_game_speed() -> void:
+	if current_game_speed >= Cfg.game_speed_fast():
+		set_game_speed(Cfg.game_speed_normal())
+	else:
+		set_game_speed(Cfg.game_speed_fast())
+
+func set_game_speed(spd: float) -> void:
+	current_game_speed = spd
+	Engine.time_scale = spd
+	game_speed_changed.emit(spd)
+
+func pause_for_relic() -> void:
+	_pre_pause_speed = current_game_speed
+	Engine.time_scale = 0.0
+
+func resume_from_relic() -> void:
+	Engine.time_scale = _pre_pause_speed
+
+
+# ====== 移除建筑模式 ======
+
+func toggle_remove_mode() -> void:
+	is_remove_mode = not is_remove_mode
+	remove_mode_changed.emit(is_remove_mode)
 
 
 # ====== 遗物效果倍率 ======
@@ -235,6 +273,11 @@ func purchase_building(building_type: BuildingType) -> bool:
 
 func get_level_multiplier(level: int) -> float:
 	return pow(Cfg.level_multiplier_base(), level - 1)
+
+func get_remove_refund(building_type: BuildingType, level: int) -> int:
+	var base_cost: int = BUILDING_COSTS.get(building_type, 0)
+	var total_invested: float = base_cost * pow(2.0, level - 1)
+	return int(total_invested * Cfg.building_remove_refund_ratio())
 
 
 # ====== 防御塔相关 ======

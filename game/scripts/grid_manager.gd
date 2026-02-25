@@ -1,19 +1,20 @@
 extends Node2D
 
+# Grid anchored at the bottom. Row 0 = bottom row (closest to shop).
+# New rows are appended and appear visually ABOVE existing rows (toward enemy).
+
 var COLS: int = 8
-var MAX_COLS: int = 24
-var ROWS: int = 8
+var ROWS: int = 2
+var MAX_ROWS: int = 8
 var CELL_SIZE: int = 64
+var GRID_BOTTOM_Y: float = 660.0
 
-var grid_offset := Vector2.ZERO
-
-var grid_data: Array = []
-var building_nodes: Dictionary = {}
+var grid_data: Array = []  # grid_data[row][col], row 0 = bottom
+var building_nodes: Dictionary = {}  # Vector2i(col, row) -> Node
 
 var hover_cell := Vector2i(-1, -1)
 var _expansion_count: int = 0
 
-# --- 建筑拖拽合并状态 ---
 var _is_dragging: bool = false
 var _drag_from: Vector2i = Vector2i(-1, -1)
 var _drag_type: int = -1
@@ -29,19 +30,20 @@ const COLOR_OCCUPIED_BORDER := Color(0.9, 0.85, 0.6, 0.5)
 const COLOR_MERGE_OK := Color(0.3, 0.75, 0.3, 0.95)
 const COLOR_MERGE_HINT := Color(0.25, 0.6, 0.25, 0.7)
 const COLOR_DRAG_SOURCE := Color(0.15, 0.25, 0.15, 0.4)
+const COLOR_REMOVE_HOVER := Color(0.7, 0.2, 0.2, 0.9)
 
 
 func _ready() -> void:
-	COLS = Cfg.grid_initial_cols()
-	MAX_COLS = Cfg.grid_max_cols()
-	ROWS = Cfg.grid_rows()
+	COLS = Cfg.grid_cols()
+	ROWS = Cfg.grid_initial_rows()
+	MAX_ROWS = Cfg.grid_max_rows()
 	CELL_SIZE = Cfg.grid_cell_size()
-	grid_offset = Vector2((Cfg.grid_viewport_width() - COLS * CELL_SIZE) / 2.0, Cfg.grid_offset_y())
+	GRID_BOTTOM_Y = Cfg.grid_bottom_y()
 	_init_grid()
 
 
 func _process(_delta: float) -> void:
-	if building_nodes.size() > 0:
+	if building_nodes.size() > 0 or hover_cell != Vector2i(-1, -1):
 		queue_redraw()
 
 
@@ -54,20 +56,31 @@ func _init_grid() -> void:
 		grid_data.append(row_data)
 
 
+# --- Coordinate conversion (row 0 = bottom) ---
+
+func _get_grid_offset_x() -> float:
+	return (Cfg.grid_viewport_width() - COLS * CELL_SIZE) / 2.0
+
+func _cell_world_rect(col: int, row: int) -> Rect2:
+	var ox: float = _get_grid_offset_x()
+	var wx: float = ox + col * CELL_SIZE
+	var wy: float = GRID_BOTTOM_Y - (row + 1) * CELL_SIZE
+	return Rect2(Vector2(wx, wy), Vector2(CELL_SIZE, CELL_SIZE))
+
+func grid_to_world_center(grid_pos: Vector2i) -> Vector2:
+	var r := _cell_world_rect(grid_pos.x, grid_pos.y)
+	return r.position + r.size / 2.0
+
 func world_to_grid(world_pos: Vector2) -> Vector2i:
-	var local_pos := world_pos - grid_offset
-	var col := int(floor(local_pos.x / CELL_SIZE))
-	var row := int(floor(local_pos.y / CELL_SIZE))
+	var ox: float = _get_grid_offset_x()
+	var col := int(floor((world_pos.x - ox) / CELL_SIZE))
+	var row := int(floor((GRID_BOTTOM_Y - world_pos.y) / CELL_SIZE))
 	if col >= 0 and col < COLS and row >= 0 and row < ROWS:
 		return Vector2i(col, row)
 	return Vector2i(-1, -1)
 
-
-func grid_to_world_center(grid_pos: Vector2i) -> Vector2:
-	return grid_offset + Vector2(
-		grid_pos.x * CELL_SIZE + CELL_SIZE / 2.0,
-		grid_pos.y * CELL_SIZE + CELL_SIZE / 2.0
-	)
+func get_grid_top_y() -> float:
+	return GRID_BOTTOM_Y - ROWS * CELL_SIZE
 
 
 func is_valid_cell(grid_pos: Vector2i) -> bool:
@@ -80,46 +93,32 @@ func is_cell_empty(grid_pos: Vector2i) -> bool:
 	return grid_data[grid_pos.y][grid_pos.x] == -1
 
 
-# --- 地图扩展 ---
+# --- 行扩展 (向上扩展) ---
 
 func get_expansion_cost() -> int:
-	var base_cost: int = Cfg.grid_expansion_cost_base()
-	var mult: float = Cfg.grid_expansion_cost_multiplier()
+	var base_cost: int = Cfg.row_expansion_cost_base()
+	var mult: float = Cfg.row_expansion_cost_multiplier()
 	return int(base_cost * pow(mult, _expansion_count))
 
-
 func can_expand() -> bool:
-	return COLS < MAX_COLS
+	return ROWS < MAX_ROWS
 
-
-func expand_grid(extra_cols: int = 2) -> bool:
+func expand_grid() -> bool:
 	if not can_expand():
 		return false
-
 	var cost: int = get_expansion_cost()
 	if not GameManager.can_afford_amount(cost):
 		return false
 
 	GameManager.gold -= cost
-	var new_cols: int = mini(COLS + extra_cols, MAX_COLS)
-	var added: int = new_cols - COLS
-
-	for row in ROWS:
-		for _c in added:
-			grid_data[row].append(-1)
-
-	COLS = new_cols
-	grid_offset = Vector2((Cfg.grid_viewport_width() - COLS * CELL_SIZE) / 2.0, Cfg.grid_offset_y())
-	if grid_offset.x < 10:
-		grid_offset.x = 10
-
+	var new_row: Array = []
+	for col in COLS:
+		new_row.append(-1)
+	grid_data.append(new_row)
+	ROWS += 1
 	_expansion_count += 1
 	queue_redraw()
 	return true
-
-
-func get_grid_right_edge() -> float:
-	return grid_offset.x + COLS * CELL_SIZE
 
 
 # --- 建筑放置 ---
@@ -143,6 +142,30 @@ func _spawn_building_node(grid_pos: Vector2i, building_type: int) -> void:
 	add_child(building)
 	building_nodes[grid_pos] = building
 	_recalc_adjacent_buffs(grid_pos)
+
+
+# --- 移除建筑 ---
+
+func remove_building(grid_pos: Vector2i) -> bool:
+	if not is_valid_cell(grid_pos) or is_cell_empty(grid_pos):
+		return false
+
+	var btype: int = grid_data[grid_pos.y][grid_pos.x]
+	var blevel: int = 1
+	if building_nodes.has(grid_pos):
+		blevel = building_nodes[grid_pos].level
+
+	var refund: int = GameManager.get_remove_refund(btype, blevel)
+	GameManager.gold += refund
+
+	if building_nodes.has(grid_pos):
+		building_nodes[grid_pos].queue_free()
+		building_nodes.erase(grid_pos)
+
+	grid_data[grid_pos.y][grid_pos.x] = -1
+	_recalc_adjacent_buffs(grid_pos)
+	queue_redraw()
+	return true
 
 
 # --- 建筑合并 ---
@@ -252,11 +275,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			queue_redraw()
 
 	elif event is InputEventMouseButton:
+		var world_pos := _screen_to_world(event.position)
+		var cell := world_to_grid(world_pos)
+
+		if event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+			if is_valid_cell(cell) and not is_cell_empty(cell):
+				remove_building(cell)
+				get_viewport().set_input_as_handled()
+				return
+
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var world_pos := _screen_to_world(event.position)
-			var cell := world_to_grid(world_pos)
 			if is_valid_cell(cell):
-				if is_cell_empty(cell):
+				if GameManager.is_remove_mode:
+					if not is_cell_empty(cell):
+						remove_building(cell)
+				elif is_cell_empty(cell):
 					try_place_building(cell)
 				else:
 					_start_building_drag(cell, world_pos)
@@ -299,14 +332,13 @@ func _draw_grid_cells() -> void:
 
 	for row in ROWS:
 		for col in COLS:
-			var cell_rect := Rect2(
-				grid_offset + Vector2(col * CELL_SIZE, row * CELL_SIZE),
-				Vector2(CELL_SIZE, CELL_SIZE)
-			)
+			var cell_rect := _cell_world_rect(col, row)
 			var gpos := Vector2i(col, row)
 			var base_color := COLOR_GRASS if (row + col) % 2 == 0 else COLOR_GRASS_ALT
 
-			if _is_dragging:
+			if GameManager.is_remove_mode and not is_cell_empty(gpos) and gpos == hover_cell:
+				base_color = COLOR_REMOVE_HOVER
+			elif _is_dragging:
 				if gpos == _drag_from:
 					base_color = COLOR_DRAG_SOURCE
 				elif gpos in merge_targets:
@@ -354,19 +386,18 @@ func _draw_buildings() -> void:
 			draw_string(font, star_pos, "★MAX", HORIZONTAL_ALIGNMENT_CENTER, CELL_SIZE * 0.7, 9, Color(1, 0.7, 0.2))
 
 		if bnode.adjacent_count > 0:
-			var border_rect := Rect2(
-				grid_offset + Vector2(pos.x * CELL_SIZE + 2, pos.y * CELL_SIZE + 2),
-				Vector2(CELL_SIZE - 4, CELL_SIZE - 4)
-			)
+			var cr := _cell_world_rect(pos.x, pos.y)
+			var border_rect := Rect2(cr.position + Vector2(2, 2), cr.size - Vector2(4, 4))
 			draw_rect(border_rect, COLOR_OCCUPIED_BORDER, false, 2.0)
 
 		if bnode.has_method("get_production_progress"):
 			var progress: float = bnode.get_production_progress()
 			if progress > 0.0:
+				var cr := _cell_world_rect(pos.x, pos.y)
 				var bar_margin: float = 6.0
 				var bar_h: float = 4.0
-				var bar_x: float = grid_offset.x + pos.x * CELL_SIZE + bar_margin
-				var bar_y: float = grid_offset.y + pos.y * CELL_SIZE + 3.0
+				var bar_x: float = cr.position.x + bar_margin
+				var bar_y: float = cr.position.y + 3.0
 				var bar_w: float = CELL_SIZE - bar_margin * 2
 
 				draw_rect(Rect2(Vector2(bar_x, bar_y), Vector2(bar_w, bar_h)), Color(0.1, 0.1, 0.1, 0.6))
@@ -393,5 +424,7 @@ func _draw_drag_ghost() -> void:
 
 
 func _draw_grid_border() -> void:
-	var border := Rect2(grid_offset, Vector2(COLS * CELL_SIZE, ROWS * CELL_SIZE))
+	var ox: float = _get_grid_offset_x()
+	var top_y: float = GRID_BOTTOM_Y - ROWS * CELL_SIZE
+	var border := Rect2(Vector2(ox, top_y), Vector2(COLS * CELL_SIZE, ROWS * CELL_SIZE))
 	draw_rect(border, Color(0.5, 0.45, 0.3, 0.6), false, 2.0)

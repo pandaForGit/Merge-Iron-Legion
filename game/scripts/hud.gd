@@ -8,6 +8,7 @@ var region_label: Label
 var breach_label: Label
 var relic_bar: Label
 var start_btn: Button
+var speed_btn: Button
 
 
 func _ready() -> void:
@@ -59,17 +60,37 @@ func _build_ui() -> void:
 	state_label.text = "⚙ 建设阶段"
 	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	state_label.position = Vector2(400, 12)
-	state_label.size = Vector2(300, 30)
-	state_label.add_theme_font_size_override("font_size", 20)
+	state_label.size = Vector2(200, 30)
+	state_label.add_theme_font_size_override("font_size", 18)
 	state_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.7))
 	add_child(state_label)
 
+	# 加速按钮
+	speed_btn = Button.new()
+	speed_btn.text = "▶ 1x"
+	speed_btn.position = Vector2(610, 8)
+	speed_btn.size = Vector2(100, 28)
+	speed_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	speed_btn.add_theme_font_size_override("font_size", 14)
+	var spd_style := StyleBoxFlat.new()
+	spd_style.bg_color = Color(0.3, 0.4, 0.5, 0.9)
+	spd_style.corner_radius_top_left = 6
+	spd_style.corner_radius_top_right = 6
+	spd_style.corner_radius_bottom_left = 6
+	spd_style.corner_radius_bottom_right = 6
+	speed_btn.add_theme_stylebox_override("normal", spd_style)
+	var spd_hover := spd_style.duplicate()
+	spd_hover.bg_color = Color(0.4, 0.5, 0.6, 0.95)
+	speed_btn.add_theme_stylebox_override("hover", spd_hover)
+	speed_btn.pressed.connect(_on_speed_pressed)
+	add_child(speed_btn)
+
 	start_btn = Button.new()
 	start_btn.text = "⚔ 开始战斗"
-	start_btn.position = Vector2(430, 38)
-	start_btn.size = Vector2(270, 32)
+	start_btn.position = Vector2(430, 40)
+	start_btn.size = Vector2(280, 28)
 	start_btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	start_btn.add_theme_font_size_override("font_size", 16)
+	start_btn.add_theme_font_size_override("font_size", 15)
 	var btn_style := StyleBoxFlat.new()
 	btn_style.bg_color = Color(0.6, 0.25, 0.2, 0.9)
 	btn_style.corner_radius_top_left = 6
@@ -84,11 +105,11 @@ func _build_ui() -> void:
 	add_child(start_btn)
 
 	info_label = Label.new()
-	info_label.text = "👆 放置建筑，拖拽同类建筑合并升级，点击「开始战斗」摧毁敌方防御塔"
+	info_label.text = "👆 放置建筑，拖拽合并升级。右键移除建筑。点击「开始」进攻！"
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_label.position = Vector2(0, 620)
 	info_label.size = Vector2(720, 30)
-	info_label.add_theme_font_size_override("font_size", 15)
+	info_label.add_theme_font_size_override("font_size", 14)
 	info_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.6, 0.8))
 	add_child(info_label)
 
@@ -109,6 +130,7 @@ func _connect_signals() -> void:
 	GameManager.region_unlocked.connect(_update_region)
 	GameManager.enemy_breached.connect(_update_breach)
 	GameManager.relic_chosen.connect(_update_relics)
+	GameManager.game_speed_changed.connect(_update_speed_btn)
 
 
 func _update_gold(amount: int) -> void:
@@ -140,11 +162,11 @@ func _update_state(new_state: GameManager.GameState) -> void:
 			start_btn.disabled = false
 			start_btn.text = "⚔ 开始战斗"
 		GameManager.GameState.PLAYING:
-			state_label.text = "⚔ 战斗进行中"
+			state_label.text = "⚔ 战斗中"
 			start_btn.disabled = true
 			start_btn.text = "⚔ 战斗中..."
 		GameManager.GameState.RELIC_SELECT:
-			state_label.text = "🎁 选择遗物"
+			state_label.text = "🎁 选择遗物(暂停)"
 			start_btn.disabled = true
 			start_btn.text = "🎁 选择中..."
 		GameManager.GameState.VICTORY:
@@ -161,7 +183,19 @@ func _on_start_btn_pressed() -> void:
 	var main_node = get_tree().root.get_node_or_null("Main")
 	if main_node and main_node.has_method("start_battle"):
 		main_node.start_battle()
-		show_info("⚔ 战斗开始！防御塔会生产敌人反击，注意防守！")
+		show_info("⚔ 战斗开始！单位自动侦测视野内敌人攻击！")
+
+
+func _on_speed_pressed() -> void:
+	if GameManager.state == GameManager.GameState.PLAYING:
+		GameManager.toggle_game_speed()
+
+
+func _update_speed_btn(new_speed: float) -> void:
+	if new_speed >= Cfg.game_speed_fast():
+		speed_btn.text = "⏩ 2x"
+	else:
+		speed_btn.text = "▶ 1x"
 
 
 func _update_relics(_rtype: int) -> void:

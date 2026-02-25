@@ -49,11 +49,11 @@ func _process(delta: float) -> void:
 				_attack_timer = 0.0
 				_do_attack()
 		else:
-			global_position.x -= speed * delta
+			global_position.y += speed * delta
 	else:
-		global_position.x -= speed * delta
+		global_position.y += speed * delta
 
-	if global_position.x < Cfg.battlefield_left():
+	if global_position.y > Cfg.battlefield_bottom():
 		is_active = false
 		GameManager.on_enemy_breach()
 		queue_free()
